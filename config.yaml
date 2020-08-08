@@ -1,0 +1,20 @@
+active: "testnet"
+
+mainnet:
+  node: 
+    lcd_server_endpoint: "http://172.16.0.60:1317"
+    node_server_endpoint: "http://172.16.0.60:26657"
+  web:
+    port: 5001
+  mysql:
+    mysql_res : "hschain:hschain@tcp(192.168.15.99:3306)/hschain?charset=utf8mb4&collation=utf8mb4_unicode_ci&parseTime=true"
+
+
+testnet:
+  node: 
+    lcd_server_endpoint: "http://103.150.214.70:1317"
+    node_server_endpoint: "http://103.150.214.70:26657"
+  web:
+    port: 5001
+  mysql:
+    mysql_res : "hschain:hschain@tcp(192.168.15.99:3306)/hschain?charset=utf8mb4&collation=utf8mb4_unicode_ci&parseTime=true"
