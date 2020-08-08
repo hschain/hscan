@@ -70,7 +70,7 @@ func main() {
 
 	db := db.NewDB(cfg.Mysql)
 	db.LogMode(true)
-	db.AutoMigrate(&schema.Block{})
+	db.AutoMigrate(&schema.Block{}, &schema.Transaction{})
 
 	cdc := newCodec()
 

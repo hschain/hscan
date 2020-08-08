@@ -75,9 +75,6 @@ func (s *Scanner) sync() error {
 		dbHeight = 1
 	}
 
-	//for test
-	dbHeight = 11306
-
 	s.l.Printf("dbHeight is %v, latestBlockHeight is %v", dbHeight, latestBlockHeight)
 
 	// Ingest all blocks up to the latest height
@@ -120,55 +117,20 @@ func (s *Scanner) process(height int64) error {
 	}
 
 	//handle the txs
-	_, err = s.getTxs(txs, block)
+	transactions, err := s.getTxs(txs, block)
 	if err != nil {
 		return fmt.Errorf("failed to get schema txs: %s", err)
 	}
 
-	return fmt.Errorf("failed to insert scanned data: %s", "ok")
+	for i, trx := range transactions {
+		s.l.Printf("transactions[%d] is %+v", i, *trx)
+	}
 
-	err = s.db.InsertScannedData(schemaBlock)
+	err = s.db.InsertScannedData(schemaBlock, transactions)
 	if err != nil {
 		return fmt.Errorf("failed to insert scanned data: %s", err)
 	}
 
-	/*
-		valSet, err := s.client.ValidatorSet(block.Block.LastCommit.Height())
-		if err != nil {
-			return fmt.Errorf("failed to query validator set using rpc client: %s", err)
-		}
-
-		vals, err := s.client.Validators()
-		if err != nil {
-			return fmt.Errorf("failed to query validators using rpc client: %s", err)
-		}
-
-		resultBlock, err := s.getBlock(block) // TODO: Reward Fees Calculation
-		if err != nil {
-			return fmt.Errorf("failed to get block: %s", err)
-		}
-
-		resultTxs, err := s.getTxs(block)
-		if err != nil {
-			return fmt.Errorf("failed to get transactions: %s", err)
-		}
-
-		resultValidators, err := s.getValidators(vals)
-		if err != nil {
-			return fmt.Errorf("failed to get validators: %s", err)
-		}
-
-		resultPreCommits, err := s.getPreCommits(block.Block.LastCommit, valSet)
-		if err != nil {
-			return fmt.Errorf("failed to get precommits: %s", err)
-		}
-
-		err = ex.db.InsertExportedData(resultBlock, resultTxs, resultValidators, resultPreCommits)
-		if err != nil {
-			return fmt.Errorf("failed to insert exporterd data: %s", err)
-		}
-
-	*/
 	return nil
 }
 
@@ -196,103 +158,36 @@ func (s *Scanner) getBlock(block *tmctypes.ResultBlock) ([]*schema.Block, error)
 
 // getTxs parses transactions and wrap into Transaction schema struct
 func (s *Scanner) getTxs(txs []*tmctypes.ResultTx, resBlock *tmctypes.ResultBlock) ([]*schema.Transaction, error) {
-	parseTx := func(cdc *codec.Codec, txBytes []byte) (sdk.Tx, error) {
-		var tx types.StdTx
-
-		err := cdc.UnmarshalBinaryLengthPrefixed(txBytes, &tx)
-		if err != nil {
-			return nil, err
-		}
-
-		return tx, nil
-	}
-
-	format := func(cdc *codec.Codec, resTx *tmctypes.ResultTx, resBlock *tmctypes.ResultBlock) (*sdk.TxResponse, error) {
-		tx, err := parseTx(cdc, resTx.Tx)
-		if err != nil {
-			s.l.Printf("parseTx failed")
-			return nil, err
-		}
-
-		resp := sdk.NewResponseResultTx(resTx, tx, resBlock.Block.Time.Format(time.RFC3339))
-		return &resp, nil
-	}
-
-	var err error
-	out := make([]*sdk.TxResponse, len(txs))
-	for i := range txs {
-		s.l.Printf("raw tx is %s", txs[i].Tx)
-		out[i], err = format(s.cdc, txs[i], resBlock)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	s.l.Printf("Txs is %+v", out)
-
-	return nil, nil
-}
-
-/*
-
-// getTxs parses transactions and wrap into Transaction schema struct
-func (s *s) getTxs(block *models.Block) ([]*schema.Transaction, error) {
 	transactions := make([]*schema.Transaction, 0)
+	for i := range txs {
+		var stdTx types.StdTx
 
-	txs, err := ex.client.Txs(block)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(txs) > 0 {
-		for _, tx := range txs {
-			var stdTx txtypes.StdTx
-			s.cdc.UnmarshalBinaryLengthPrefixed([]byte(tx.Tx), &stdTx)
-
-			msgsBz, err := s.cdc.MarshalJSON(stdTx.GetMsgs())
-			if err != nil {
-				return nil, err
-			}
-
-			sigs := make([]types.Signature, len(stdTx.Signatures), len(stdTx.Signatures))
-
-			for i, sig := range stdTx.Signatures {
-				consPubKey, err := ctypes.Bech32ifyConsPub(sig.PubKey)
-				if err != nil {
-					return nil, err
-				}
-
-				sigs[i] = types.Signature{
-					Address:       sig.Address().String(), // hex string
-					AccountNumber: sig.AccountNumber,
-					Pubkey:        consPubKey,
-					Sequence:      sig.Sequence,
-					Signature:     base64.StdEncoding.EncodeToString(sig.Signature), // encode base64
-				}
-			}
-
-			sigsBz, err := s.cdc.MarshalJSON(sigs)
-			if err != nil {
-				return nil, err
-			}
-
-			tempTransaction := &schema.Transaction{
-				Height:     tx.Height,
-				TxHash:     tx.Hash.String(),
-				Code:       tx.TxResult.Code, // 0 is success
-				Messages:   string(msgsBz),
-				Signatures: string(sigsBz),
-				Memo:       stdTx.Memo,
-				GasWanted:  tx.TxResult.GasWanted,
-				GasUsed:    tx.TxResult.GasUsed,
-				Timestamp:  block.Block.Time,
-			}
-
-			transactions = append(transactions, tempTransaction)
-
+		err := s.cdc.UnmarshalBinaryLengthPrefixed(txs[i].Tx, &stdTx)
+		if err != nil {
+			return nil, err
 		}
+
+		resp := sdk.NewResponseResultTx(txs[i], stdTx, resBlock.Block.Time.Format(time.RFC3339))
+
+		msgsBz, err := s.cdc.MarshalJSON(resp.Logs)
+		if err != nil {
+			return nil, err
+		}
+
+		tempTransaction := &schema.Transaction{
+			Height:    resp.Height,
+			TxHash:    resp.TxHash,
+			Code:      resp.Code, // 0 is success
+			Messages:  string(msgsBz),
+			Fee:       string(stdTx.Fee.Bytes()),
+			Memo:      stdTx.GetMemo(),
+			GasWanted: resp.GasWanted,
+			GasUsed:   resp.GasUsed,
+			Timestamp: resBlock.Block.Time,
+		}
+
+		transactions = append(transactions, tempTransaction)
 	}
 
 	return transactions, nil
 }
-*/

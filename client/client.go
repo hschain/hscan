@@ -1,7 +1,6 @@
 package client
 
 import (
-	"log"
 	"time"
 
 	"hscan/config"
@@ -57,7 +56,7 @@ func (c *Client) GetTxs(block *tmctypes.ResultBlock) ([]*tmctypes.ResultTx, erro
 
 	for i, tmTx := range block.Block.Txs {
 
-		log.Printf("tx is %X", tmTx.Hash())
+		//log.Printf("tx is %X", tmTx.Hash())
 
 		tx, err := c.rpcClient.Tx(tmTx.Hash(), true)
 		if err != nil {
