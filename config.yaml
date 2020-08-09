@@ -13,7 +13,7 @@ mainnet:
 testnet:
   node: 
     lcd_server_endpoint: "http://103.150.214.70:1317"
-    node_server_endpoint: "http://103.150.214.70:26657"
+    node_server_endpoint: "http://192.168.15.99:26657"
     #node_server_endpoint: "http://51.75.145.123:26657"
   web:
     port: 5001

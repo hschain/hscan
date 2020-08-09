@@ -6,12 +6,9 @@ import (
 	"hscan/config"
 
 	resty "github.com/go-resty/resty/v2"
-	jsoniter "github.com/json-iterator/go"
 	rpccli "github.com/tendermint/tendermint/rpc/client"
 	tmctypes "github.com/tendermint/tendermint/rpc/core/types"
 )
-
-var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 // Client wraps for both Tendermint RPC and other API clients that
 // are needed for this project

@@ -49,9 +49,7 @@ func (s *Scanner) Start() error {
 		}
 	}()
 
-	for {
-		select {}
-	}
+	return nil
 }
 
 // sync compares block height between the height saved in your database and
@@ -74,6 +72,8 @@ func (s *Scanner) sync() error {
 	if dbHeight == 0 {
 		dbHeight = 1
 	}
+
+	//dbHeight = 11240
 
 	s.l.Printf("dbHeight is %v, latestBlockHeight is %v", dbHeight, latestBlockHeight)
 
@@ -175,15 +175,15 @@ func (s *Scanner) getTxs(txs []*tmctypes.ResultTx, resBlock *tmctypes.ResultBloc
 		}
 
 		tempTransaction := &schema.Transaction{
-			Height:    resp.Height,
-			TxHash:    resp.TxHash,
-			Code:      resp.Code, // 0 is success
-			Messages:  string(msgsBz),
-			Fee:       string(stdTx.Fee.Bytes()),
-			Memo:      stdTx.GetMemo(),
-			GasWanted: resp.GasWanted,
-			GasUsed:   resp.GasUsed,
-			Timestamp: resBlock.Block.Time,
+			Height:      resp.Height,
+			TxHash:      resp.TxHash,
+			Code:        resp.Code, // 0 is success
+			RawMessages: string(msgsBz),
+			Fee:         string(stdTx.Fee.Bytes()),
+			Memo:        stdTx.GetMemo(),
+			GasWanted:   resp.GasWanted,
+			GasUsed:     resp.GasUsed,
+			Timestamp:   resBlock.Block.Time,
 		}
 
 		transactions = append(transactions, tempTransaction)

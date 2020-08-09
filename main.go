@@ -9,6 +9,7 @@ import (
 	"hscan/db"
 	"hscan/scanner"
 	"hscan/schema"
+	"hscan/server"
 
 	//tmctypes "github.com/tendermint/tendermint/rpc/core/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -74,14 +75,12 @@ func main() {
 
 	cdc := newCodec()
 
-	scanner := scanner.NewScanner(l, client, db, cdc)
+	_ = scanner.NewScanner(l, client, db, cdc)
 
-	scanner.Start()
+	//scanner.Start()
 
-	// if b, err := client.GetBlock(1); err != nil {
-	// 	l.Printf("err is %s", err)
-	// } else {
-	// 	l.Printf("block is %+v", *b)
-	// }
+	server := server.NewServer("127.0.0.1:"+cfg.Web.Port, l, db, cdc)
+
+	server.Start()
 
 }
