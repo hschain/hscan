@@ -167,6 +167,8 @@ func (s *Scanner) getTxs(txs []*tmctypes.ResultTx, resBlock *tmctypes.ResultBloc
 			return nil, err
 		}
 
+		//s.l.Printf("stdTx is %+v", stdTx)
+
 		resp := sdk.NewResponseResultTx(txs[i], stdTx, resBlock.Block.Time.Format(time.RFC3339))
 
 		msgsBz, err := s.cdc.MarshalJSON(resp.Logs)
