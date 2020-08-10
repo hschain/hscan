@@ -51,7 +51,9 @@ func (s *Server) Start() error {
 	r.Use(s.cros)
 
 	r.GET("/blocks", s.blocks)
+	r.GET("/blocks/:height", s.block)
 	r.GET("/txs", s.txs)
+	r.GET("/txs/:txid", s.tx)
 
 	s.e.Run(s.addr)
 	return nil

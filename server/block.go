@@ -32,3 +32,21 @@ func (s *Server) blocks(c *gin.Context) {
 	})
 
 }
+
+func (s *Server) block(c *gin.Context) {
+	height := c.Param("height")
+	var blocks []*schema.Block
+
+	if err := s.db.Where("height = ?", height).First(&blocks).Error; err != nil {
+		s.l.Printf("query blocks from db failed")
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"paging": map[string]interface{}{
+			"total":  1,
+			"before": 2,
+			"after":  3,
+		},
+		"data": blocks,
+	})
+}

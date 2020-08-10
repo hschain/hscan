@@ -4,6 +4,7 @@ import (
 	"hscan/schema"
 	"net/http"
 	"strconv"
+	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/gin-gonic/gin"
@@ -65,7 +66,7 @@ func (s *Server) format(txs []*schema.Transaction) {
 					if logs[j].Events[k].Attributes[l].Key == "amount" {
 						if coin, err := sdk.ParseCoin(logs[j].Events[k].Attributes[l].Value); err == nil {
 							evt.Attributes.(map[string]string)["amount"] = coin.Amount.String()
-							evt.Attributes.(map[string]string)["denom"] = coin.Denom
+							evt.Attributes.(map[string]string)["denom"] = strings.ToUpper(coin.Denom)
 							continue
 						}
 
@@ -109,4 +110,25 @@ func (s *Server) txs(c *gin.Context) {
 		"data": txs,
 	})
 
+}
+
+func (s *Server) tx(c *gin.Context) {
+	txid := c.Param("txid")
+	var txs []*schema.Transaction
+	if err := s.db.Where("tx_hash = ?", txid).First(&txs).Error; err != nil {
+		s.l.Printf("query blocks from db failed")
+	} else {
+
+	}
+
+	s.format(txs)
+
+	c.JSON(http.StatusOK, gin.H{
+		"paging": map[string]interface{}{
+			"total":  1,
+			"before": 2,
+			"after":  3,
+		},
+		"data": txs,
+	})
 }
