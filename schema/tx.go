@@ -6,13 +6,10 @@ import (
 )
 
 type Message struct {
-	MsgIndex uint16 `json:"msg_index"`
-	Success  bool   `json:"success"`
-	Log      string `json:"log"`
-	Events   []struct {
-		Type       string      `json:"type"`
-		Attributes interface{} `json:"attributes"`
-	} `json:"events"`
+	MsgIndex uint16                       `json:"msg_index"`
+	Success  bool                         `json:"success"`
+	Log      string                       `json:"log"`
+	Events   map[string]map[string]string `json:"events"`
 }
 
 // Transaction defines the schema for transaction information
@@ -26,7 +23,6 @@ type Transaction struct {
 	Messages  []*Message `json:"messages" gorm:"-"`
 	Memo      string     `json:"memo"`
 	Fee       string     `json:"fee"`
-	Action    string     `json:"action" gorm:"-"`
 	GasWanted int64      `json:"gas_wanted" gorm:"default:0"`
 	GasUsed   int64      `json:"gas_used" gorm:"default:0"`
 	Timestamp time.Time  `json:"timestamp" gorm:"default:now()"`

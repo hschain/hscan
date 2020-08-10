@@ -39,6 +39,14 @@ func (s *Server) block(c *gin.Context) {
 
 	if err := s.db.Where("height = ?", height).First(&blocks).Error; err != nil {
 		s.l.Printf("query blocks from db failed")
+	} else {
+		var txs []*schema.Transaction
+		if err := s.db.Where("height = ?", height).Find(&txs).Error; err != nil {
+			s.l.Printf("query txs from db failed")
+		}
+
+		s.format(txs)
+		blocks[0].Txs = txs
 	}
 
 	c.JSON(http.StatusOK, gin.H{
