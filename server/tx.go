@@ -85,13 +85,15 @@ func (s *Server) txs(c *gin.Context) {
 func (s *Server) tx(c *gin.Context) {
 	txid := c.Param("txid")
 	var txs []*schema.Transaction
+	var tx0 *schema.Transaction
 	if err := s.db.Where("tx_hash = ?", txid).First(&txs).Error; err != nil {
 		s.l.Printf("query blocks from db failed")
-	} else {
-
 	}
 
 	s.format(txs)
+	if len(txs) == 1 {
+		tx0 = txs[0]
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"paging": map[string]interface{}{
@@ -99,6 +101,6 @@ func (s *Server) tx(c *gin.Context) {
 			"before": 2,
 			"after":  3,
 		},
-		"data": txs,
+		"data": tx0,
 	})
 }
