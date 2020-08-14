@@ -75,9 +75,9 @@ func main() {
 
 	cdc := newCodec()
 
-	_ = scanner.NewScanner(l, client, db, cdc)
+	scanner := scanner.NewScanner(l, client, db, cdc)
 
-	//scanner.Start()
+	scanner.Start()
 
 	server := server.NewServer("127.0.0.1:"+cfg.Web.Port, l, db, cdc)
 

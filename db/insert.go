@@ -13,7 +13,7 @@ func (db *Database) InsertScannedData(blocks []*schema.Block, txs []*schema.Tran
 	}
 
 	for i := 0; i < len(blocks); i++ {
-		if err := db.Save(blocks[i]).Error; err != nil {
+		if err := db.Create(blocks[i]).Error; err != nil {
 			return err
 		}
 	}
