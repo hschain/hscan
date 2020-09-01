@@ -21,61 +21,31 @@ func (s *Server) format(txs []*schema.Transaction) {
 		s.l.Printf("log is %+v", logs)
 
 		for j := 0; j < len(logs); j++ {
-			index := 0
-
-			//put message event in the head
-			for k := 0; k < len(logs[j].Events); k++ {
-				if logs[j].Events[k].Type == "message" {
-					for l := 0; l < len(logs[j].Events[k].Attributes); l++ {
-						if logs[j].Events[k].Attributes[l].Key == "action" {
-							txs[i].Action = logs[j].Events[k].Attributes[l].Value
-							break
-						}
-					}
-					index = k
-					break
-				}
-			}
-
-			if index != 0 {
-				var arr sdk.StringEvents
-				arr = append(arr, logs[j].Events[index])
-				arr = append(arr, logs[j].Events[0:index]...)
-				if index != len(logs[j].Events) {
-					arr = append(arr, logs[j].Events[index+1:]...)
-				}
-				logs[j].Events = arr
-			}
 
 			//convert
 			msg := &schema.Message{
 				MsgIndex: logs[j].MsgIndex,
 				Success:  logs[j].Success,
 				Log:      logs[j].Log,
+				Events:   make(map[string]map[string]string),
 			}
 
 			for k := 0; k < len(logs[j].Events); k++ {
-				evt := struct {
-					Type       string      `json:"type"`
-					Attributes interface{} `json:"attributes"`
-				}{
-					Type:       logs[j].Events[k].Type,
-					Attributes: make(map[string]string),
-				}
+				attrs := make(map[string]string)
 
 				for l := 0; l < len(logs[j].Events[k].Attributes); l++ {
 					if logs[j].Events[k].Attributes[l].Key == "amount" {
 						if coin, err := sdk.ParseCoin(logs[j].Events[k].Attributes[l].Value); err == nil {
-							evt.Attributes.(map[string]string)["amount"] = coin.Amount.String()
-							evt.Attributes.(map[string]string)["denom"] = strings.ToUpper(coin.Denom)
+							attrs["amount"] = coin.Amount.String()
+							attrs["denom"] = strings.ToUpper(coin.Denom)
 							continue
 						}
 
 					}
-					evt.Attributes.(map[string]string)[logs[j].Events[k].Attributes[l].Key] = logs[j].Events[k].Attributes[l].Value
+					attrs[logs[j].Events[k].Attributes[l].Key] = logs[j].Events[k].Attributes[l].Value
 				}
 
-				msg.Events = append(msg.Events, evt)
+				msg.Events[logs[j].Events[k].Type] = attrs
 			}
 
 			messages = append(messages, msg)

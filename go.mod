@@ -11,7 +11,7 @@ require (
 	github.com/json-iterator/go v1.1.9
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/viper v1.7.1
-	github.com/tendermint/go-amino v0.15.1 // indirect
 	github.com/tendermint/tendermint v0.32.12
+    github.com/tendermint/go-amino v0.15.1 // indirect
 	github.com/zxs-paryada/hschain v0.0.0-20200901095342-8d6d267d70af
 )
