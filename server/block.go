@@ -6,27 +6,38 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/pkg/errors"
 )
 
 func (s *Server) blocks(c *gin.Context) {
 
-	limit := c.DefaultQuery("limit", "5")
+	height, _ := strconv.ParseInt(c.DefaultQuery("height", "0"), 10, 64)
+	limit := c.DefaultQuery("limit", "60")
 	iLimit, _ := strconv.ParseInt(limit, 10, 64)
 	if iLimit <= 0 {
 		iLimit = 5
 	}
 
+	if height < 0 {
+		height = 0
+	}
+
 	var blocks []*schema.Block
 
-	if err := s.db.Order("height DESC").Limit(iLimit).Find(&blocks).Error; err != nil {
+	if err := s.db.Order("height DESC").Where(" height >= ?", height).Limit(iLimit).Find(&blocks).Error; err != nil {
 		s.l.Printf("query blocks from db failed")
+	}
+
+	total, err := s.db.QueryLatestBlockHeight()
+	if total == -1 {
+		s.l.Fatal(errors.Wrap(err, "failed to query the latest block height on the active network"))
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"paging": map[string]interface{}{
-			"total":  1,
-			"before": 2,
-			"after":  3,
+			"total":  total,
+			"before": blocks[len(blocks)-1].Height,
+			"after":  blocks[0].Height,
 		},
 		"data": blocks,
 	})
@@ -39,21 +50,18 @@ func (s *Server) block(c *gin.Context) {
 
 	if err := s.db.Where("height = ?", height).First(&blocks).Error; err != nil {
 		s.l.Printf("query blocks from db failed")
-	} else {
-		var txs []*schema.Transaction
-		if err := s.db.Where("height = ?", height).Find(&txs).Error; err != nil {
-			s.l.Printf("query txs from db failed")
-		}
+	}
 
-		s.format(txs)
-		blocks[0].Txs = txs
+	total, err := s.db.QueryLatestBlockHeight()
+	if total == -1 {
+		s.l.Fatal(errors.Wrap(err, "failed to query the latest block height on the active network"))
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"paging": map[string]interface{}{
-			"total":  1,
-			"before": 2,
-			"after":  3,
+			"total":  total,
+			"before": blocks[len(blocks)-1].Height,
+			"after":  blocks[0].Height,
 		},
 		"data": blocks,
 	})

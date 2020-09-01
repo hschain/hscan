@@ -10,9 +10,10 @@ import (
 
 	"hscan/db"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/zxs-paryada/hschain/codec"
+	sdk "github.com/zxs-paryada/hschain/types"
+	"github.com/zxs-paryada/hschain/x/auth/types"
+
 	"github.com/pkg/errors"
 	tmctypes "github.com/tendermint/tendermint/rpc/core/types"
 )

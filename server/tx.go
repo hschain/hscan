@@ -6,8 +6,9 @@ import (
 	"strconv"
 	"strings"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/gin-gonic/gin"
+	"github.com/pkg/errors"
+	sdk "github.com/zxs-paryada/hschain/types"
 )
 
 func (s *Server) format(txs []*schema.Transaction) {
@@ -20,31 +21,61 @@ func (s *Server) format(txs []*schema.Transaction) {
 		s.l.Printf("log is %+v", logs)
 
 		for j := 0; j < len(logs); j++ {
+			index := 0
+
+			//put message event in the head
+			for k := 0; k < len(logs[j].Events); k++ {
+				if logs[j].Events[k].Type == "message" {
+					for l := 0; l < len(logs[j].Events[k].Attributes); l++ {
+						if logs[j].Events[k].Attributes[l].Key == "action" {
+							txs[i].Action = logs[j].Events[k].Attributes[l].Value
+							break
+						}
+					}
+					index = k
+					break
+				}
+			}
+
+			if index != 0 {
+				var arr sdk.StringEvents
+				arr = append(arr, logs[j].Events[index])
+				arr = append(arr, logs[j].Events[0:index]...)
+				if index != len(logs[j].Events) {
+					arr = append(arr, logs[j].Events[index+1:]...)
+				}
+				logs[j].Events = arr
+			}
 
 			//convert
 			msg := &schema.Message{
 				MsgIndex: logs[j].MsgIndex,
 				Success:  logs[j].Success,
 				Log:      logs[j].Log,
-				Events:   make(map[string]map[string]string),
 			}
 
 			for k := 0; k < len(logs[j].Events); k++ {
-				attrs := make(map[string]string)
+				evt := struct {
+					Type       string      `json:"type"`
+					Attributes interface{} `json:"attributes"`
+				}{
+					Type:       logs[j].Events[k].Type,
+					Attributes: make(map[string]string),
+				}
 
 				for l := 0; l < len(logs[j].Events[k].Attributes); l++ {
 					if logs[j].Events[k].Attributes[l].Key == "amount" {
 						if coin, err := sdk.ParseCoin(logs[j].Events[k].Attributes[l].Value); err == nil {
-							attrs["amount"] = coin.Amount.String()
-							attrs["denom"] = strings.ToUpper(coin.Denom)
+							evt.Attributes.(map[string]string)["amount"] = coin.Amount.String()
+							evt.Attributes.(map[string]string)["denom"] = strings.ToUpper(coin.Denom)
 							continue
 						}
 
 					}
-					attrs[logs[j].Events[k].Attributes[l].Key] = logs[j].Events[k].Attributes[l].Value
+					evt.Attributes.(map[string]string)[logs[j].Events[k].Attributes[l].Key] = logs[j].Events[k].Attributes[l].Value
 				}
 
-				msg.Events[logs[j].Events[k].Type] = attrs
+				msg.Events = append(msg.Events, evt)
 			}
 
 			messages = append(messages, msg)
@@ -57,6 +88,7 @@ func (s *Server) format(txs []*schema.Transaction) {
 }
 
 func (s *Server) txs(c *gin.Context) {
+	height := c.DefaultQuery("height", "0")
 	limit := c.DefaultQuery("limit", "5")
 	iLimit, _ := strconv.ParseInt(limit, 10, 64)
 	if iLimit <= 0 {
@@ -65,7 +97,12 @@ func (s *Server) txs(c *gin.Context) {
 
 	var txs []*schema.Transaction
 
-	if err := s.db.Order("id DESC").Limit(iLimit).Find(&txs).Error; err != nil {
+	total, err := s.db.QueryLatestTxBlockHeight()
+	if total == -1 {
+		s.l.Fatal(errors.Wrap(err, "failed to query the latest block height on the active network"))
+	}
+
+	if err := s.db.Order("height DESC").Where(" height >= ?", height).Limit(iLimit).Find(&txs).Error; err != nil {
 		s.l.Printf("query blocks from db failed")
 	}
 
@@ -73,9 +110,9 @@ func (s *Server) txs(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"paging": map[string]interface{}{
-			"total":  1,
-			"before": 2,
-			"after":  3,
+			"total":  total,
+			"before": txs[len(txs)-1].Height,
+			"after":  txs[0].Height,
 		},
 		"data": txs,
 	})
@@ -85,22 +122,26 @@ func (s *Server) txs(c *gin.Context) {
 func (s *Server) tx(c *gin.Context) {
 	txid := c.Param("txid")
 	var txs []*schema.Transaction
-	var tx0 *schema.Transaction
+
+	total, err := s.db.QueryLatestTxBlockHeight()
+	if total == -1 {
+		s.l.Fatal(errors.Wrap(err, "failed to query the latest block height on the active network"))
+	}
+
 	if err := s.db.Where("tx_hash = ?", txid).First(&txs).Error; err != nil {
 		s.l.Printf("query blocks from db failed")
+	} else {
+
 	}
 
 	s.format(txs)
-	if len(txs) == 1 {
-		tx0 = txs[0]
-	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"paging": map[string]interface{}{
-			"total":  1,
-			"before": 2,
-			"after":  3,
+			"total":  total,
+			"before": txs[len(txs)-1].Height,
+			"after":  txs[0].Height,
 		},
-		"data": tx0,
+		"data": txs,
 	})
 }

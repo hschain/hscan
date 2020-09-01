@@ -3,7 +3,6 @@ module hscan
 go 1.14
 
 require (
-	github.com/cosmos/cosmos-sdk v0.37.13
 	github.com/gin-gonic/gin v1.6.3
 	github.com/go-resty/resty/v2 v2.3.0
 	github.com/go-sql-driver/mysql v1.5.0
@@ -14,4 +13,5 @@ require (
 	github.com/spf13/viper v1.7.1
 	github.com/tendermint/go-amino v0.15.1 // indirect
 	github.com/tendermint/tendermint v0.32.12
+	github.com/zxs-paryada/hschain v0.0.0-20200901095342-8d6d267d70af
 )

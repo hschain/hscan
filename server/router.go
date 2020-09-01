@@ -1,12 +1,13 @@
 package server
 
 import (
+	"fmt"
 	"hscan/db"
 	"log"
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/zxs-paryada/hschain/codec"
 )
 
 type Server struct {
@@ -18,6 +19,7 @@ type Server struct {
 }
 
 func NewServer(addr string, l *log.Logger, db *db.Database, cdc *codec.Codec) *Server {
+	fmt.Println("addr=>", addr)
 	return &Server{
 		addr,
 		gin.Default(),
@@ -50,7 +52,7 @@ func (s *Server) Start() error {
 	r := s.e.Group("/api/v1")
 	r.Use(s.cros)
 
-	r.GET("/blocks", s.blocks)
+	r.GET("/blocks/", s.blocks)
 	r.GET("/blocks/:height", s.block)
 	r.GET("/txs", s.txs)
 	r.GET("/txs/:txid", s.tx)
