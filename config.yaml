@@ -12,12 +12,13 @@ mainnet:
 
 testnet:
   node: 
-    lcd_server_endpoint: "http://119.28.60.149:1317"
-    node_server_endpoint: "http://119.28.60.149:26657"
+    #lcd_server_endpoint: "http://103.150.214.70:1317"
+    #node_server_endpoint: "http://192.168.15.99:26657"
     #node_server_endpoint: "http://51.75.145.123:26657"
-    #lcd_server_endpoint: "http://127.0.0.1:1317"
-    #node_server_endpoint: "http://127.0.0.1:26657"
+    lcd_server_endpoint: "http://127.0.0.1:1317"
+    node_server_endpoint: "http://127.0.0.1:26657"
   web:
     port: 5001
   mysql:
+   # mysql_res : "hschain:hschain@tcp(192.168.15.99:3306)/hschain?charset=utf8mb4&collation=utf8mb4_unicode_ci&parseTime=true"
     mysql_res : "root:mingshan@tcp(127.0.0.1:3306)/hschain?charset=utf8mb4&collation=utf8mb4_unicode_ci&parseTime=true"

@@ -58,31 +58,45 @@ func (s *Server) format(txs []*schema.Transaction) {
 }
 
 func (s *Server) txs(c *gin.Context) {
-	height := c.DefaultQuery("height", "0")
+	height, _ := strconv.ParseInt(c.DefaultQuery("begin", "0"), 10, 64)
 	limit := c.DefaultQuery("limit", "5")
 	iLimit, _ := strconv.ParseInt(limit, 10, 64)
 	if iLimit <= 0 {
 		iLimit = 5
 	}
 
-	var txs []*schema.Transaction
-
 	total, err := s.db.QueryLatestTxBlockHeight()
 	if total == -1 {
 		s.l.Fatal(errors.Wrap(err, "failed to query the latest block height on the active network"))
 	}
 
-	if err := s.db.Order("height DESC").Where(" height >= ?", height).Limit(iLimit).Find(&txs).Error; err != nil {
+	if height <= 0 {
+		height = total
+	}
+	var txs []*schema.Transaction
+
+	if err := s.db.Order("height DESC").Where(" height <= ?", height).Limit(iLimit).Find(&txs).Error; err != nil {
 		s.l.Printf("query blocks from db failed")
 	}
 
 	s.format(txs)
 
+	if len(txs) == 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"paging": map[string]interface{}{
+				"total": total,
+				"begin": 0,
+				"end":   0,
+			},
+			"data": nil,
+		})
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"paging": map[string]interface{}{
-			"total":  total,
-			"before": txs[len(txs)-1].Height,
-			"after":  txs[0].Height,
+			"total": total,
+			"end":   txs[len(txs)-1].Height,
+			"begin": txs[0].Height,
 		},
 		"data": txs,
 	})
@@ -92,26 +106,38 @@ func (s *Server) txs(c *gin.Context) {
 func (s *Server) tx(c *gin.Context) {
 	txid := c.Param("txid")
 	var txs []*schema.Transaction
+	var tx0 *schema.Transaction
+	if err := s.db.Where("tx_hash = ?", txid).First(&txs).Error; err != nil {
+		s.l.Printf("query blocks from db failed")
+	}
+
+	s.format(txs)
+	if len(txs) == 1 {
+		tx0 = txs[0]
+	}
 
 	total, err := s.db.QueryLatestTxBlockHeight()
 	if total == -1 {
 		s.l.Fatal(errors.Wrap(err, "failed to query the latest block height on the active network"))
 	}
 
-	if err := s.db.Where("tx_hash = ?", txid).First(&txs).Error; err != nil {
-		s.l.Printf("query blocks from db failed")
-	} else {
-
+	if len(txs) == 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"paging": map[string]interface{}{
+				"total": total,
+				"end":   txs[len(txs)-1].Height,
+				"begin": txs[0].Height,
+			},
+			"data": nil,
+		})
+		return
 	}
-
-	s.format(txs)
-
 	c.JSON(http.StatusOK, gin.H{
 		"paging": map[string]interface{}{
-			"total":  total,
-			"before": txs[len(txs)-1].Height,
-			"after":  txs[0].Height,
+			"total":  1,
+			"before": 2,
+			"after":  3,
 		},
-		"data": txs,
+		"data": tx0,
 	})
 }

@@ -10,12 +10,11 @@ import (
 
 	"hscan/db"
 
+	"github.com/pkg/errors"
+	tmctypes "github.com/tendermint/tendermint/rpc/core/types"
 	"github.com/zxs-paryada/hschain/codec"
 	sdk "github.com/zxs-paryada/hschain/types"
 	"github.com/zxs-paryada/hschain/x/auth/types"
-
-	"github.com/pkg/errors"
-	tmctypes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
 // Scanner wraps the required params to scan blockchain

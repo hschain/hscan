@@ -1,31 +1,33 @@
 package server
 
 import (
-	"fmt"
 	"hscan/db"
 	"log"
 
 	"github.com/gin-gonic/gin"
 
+	"hscan/client"
+
 	"github.com/zxs-paryada/hschain/codec"
 )
 
 type Server struct {
-	addr string
-	e    *gin.Engine
-	l    *log.Logger
-	db   *db.Database
-	cdc  *codec.Codec
+	addr   string
+	e      *gin.Engine
+	l      *log.Logger
+	db     *db.Database
+	cdc    *codec.Codec
+	client *client.Client
 }
 
-func NewServer(addr string, l *log.Logger, db *db.Database, cdc *codec.Codec) *Server {
-	fmt.Println("addr=>", addr)
+func NewServer(addr string, l *log.Logger, db *db.Database, cdc *codec.Codec, client *client.Client) *Server {
 	return &Server{
 		addr,
 		gin.Default(),
 		l,
 		db,
 		cdc,
+		client,
 	}
 }
 
@@ -52,10 +54,13 @@ func (s *Server) Start() error {
 	r := s.e.Group("/api/v1")
 	r.Use(s.cros)
 
-	r.GET("/blocks/", s.blocks)
+	r.GET("/blocks", s.blocks)
 	r.GET("/blocks/:height", s.block)
 	r.GET("/txs", s.txs)
 	r.GET("/txs/:txid", s.tx)
+	r.GET("/account/:address", s.account)
+	r.GET("/minting/status", s.mintingstatus)
+	r.GET("/minting/params", s.mintingparams)
 
 	s.e.Run(s.addr)
 	return nil

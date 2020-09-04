@@ -1,6 +1,7 @@
 package client
 
 import (
+	"fmt"
 	"time"
 
 	"hscan/config"
@@ -15,6 +16,7 @@ import (
 type Client struct {
 	lcdClient *resty.Client
 	rpcClient *rpccli.HTTP
+	cfg       *config.NodeConfig
 }
 
 // NewClient creates a new client with the given config
@@ -29,6 +31,7 @@ func NewClient(cfg config.NodeConfig) *Client {
 	return &Client{
 		lcdClient,
 		rpcClient,
+		&cfg,
 	}
 }
 
@@ -64,4 +67,25 @@ func (c *Client) GetTxs(block *tmctypes.ResultBlock) ([]*tmctypes.ResultTx, erro
 	}
 
 	return txs, nil
+}
+
+func (c *Client) RestyGet(path string, param string) (*resty.Response, error) {
+	var data string = path + param
+	fmt.Println(data)
+	return resty.New().R().EnableTrace().Get(data)
+}
+
+func (c *Client) QueryAccounts(address string) (*resty.Response, error) {
+
+	return c.RestyGet(c.cfg.LCDServerEndpoint+"/auth/accounts/", address)
+}
+
+func (c *Client) Mintingparameters() (*resty.Response, error) {
+
+	return c.RestyGet(c.cfg.LCDServerEndpoint+"/minting/parameters", "")
+}
+
+func (c *Client) Mintingstatus() (*resty.Response, error) {
+
+	return c.RestyGet(c.cfg.LCDServerEndpoint+"/minting/status", "")
 }
