@@ -1,7 +1,10 @@
 package server
 
 import (
+	"encoding/json"
+	"fmt"
 	"hscan/schema"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
@@ -10,6 +13,49 @@ import (
 	"github.com/pkg/errors"
 	sdk "github.com/zxs-paryada/hschain/types"
 )
+
+func (s *Server) txresponse(c *gin.Context, total int64, txs []*schema.RavlTransaction) {
+
+	if len(txs) <= 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"paging": map[string]interface{}{
+				"total": total,
+				"end":   0,
+				"begin": 0,
+			},
+			"data": nil,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"paging": map[string]interface{}{
+			"total": total,
+			"end":   txs[len(txs)-1].ID,
+			"begin": txs[0].ID,
+		},
+		"data": txs,
+	})
+}
+
+func (s *Server) formatRavlTransaction(txs []*schema.Transaction) []*schema.RavlTransaction {
+	var Ravtxs []*schema.RavlTransaction
+	Ravtxs = make([]*schema.RavlTransaction, 0)
+	for j := 0; j < len(txs); j++ {
+
+		tempTransaction := &schema.RavlTransaction{
+			ID:        txs[j].ID,
+			Height:    txs[j].Height,
+			TxHash:    txs[j].TxHash,
+			Messages:  txs[j].Messages,
+			Memo:      txs[j].Memo,
+			Timestamp: txs[j].Timestamp,
+		}
+
+		Ravtxs = append(Ravtxs, tempTransaction)
+	}
+	return Ravtxs
+}
 
 func (s *Server) format(txs []*schema.Transaction) {
 
@@ -60,6 +106,7 @@ func (s *Server) format(txs []*schema.Transaction) {
 func (s *Server) txs(c *gin.Context) {
 	height, _ := strconv.ParseInt(c.DefaultQuery("begin", "0"), 10, 64)
 	limit := c.DefaultQuery("limit", "5")
+	address := c.DefaultQuery("address", "null")
 	iLimit, _ := strconv.ParseInt(limit, 10, 64)
 	if iLimit <= 0 {
 		iLimit = 5
@@ -67,77 +114,54 @@ func (s *Server) txs(c *gin.Context) {
 
 	total, err := s.db.QueryLatestTxBlockHeight()
 	if total == -1 {
-		s.l.Fatal(errors.Wrap(err, "failed to query the latest block height on the active network"))
+		s.l.Print(errors.Wrap(err, "failed to query the latest block height on the active network"))
 	}
 
 	if height <= 0 {
 		height = total
 	}
 	var txs []*schema.Transaction
-
-	if err := s.db.Order("height DESC").Where(" height <= ?", height).Limit(iLimit).Find(&txs).Error; err != nil {
-		s.l.Printf("query blocks from db failed")
+	if address == "null" {
+		if err := s.db.Order("id DESC").Where(" id <= ?", height).Limit(iLimit).Find(&txs).Error; err != nil {
+			s.l.Printf("query blocks from db failed")
+		}
+	} else {
+		if err := s.db.Order("id DESC").Where(" id <= ? and (Sender = ? or Recipient = ?)", height, address, address).Limit(iLimit).Find(&txs).Error; err != nil {
+			s.l.Printf("query blocks from db failed")
+		}
 	}
 
 	s.format(txs)
 
-	if len(txs) == 0 {
-		c.JSON(http.StatusOK, gin.H{
-			"paging": map[string]interface{}{
-				"total": total,
-				"begin": 0,
-				"end":   0,
-			},
-			"data": nil,
-		})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{
-		"paging": map[string]interface{}{
-			"total": total,
-			"end":   txs[len(txs)-1].Height,
-			"begin": txs[0].Height,
-		},
-		"data": txs,
-	})
-
+	Ravl := s.formatRavlTransaction(txs)
+	s.txresponse(c, total, Ravl)
 }
 
 func (s *Server) tx(c *gin.Context) {
 	txid := c.Param("txid")
 	var txs []*schema.Transaction
-	var tx0 *schema.Transaction
+
 	if err := s.db.Where("tx_hash = ?", txid).First(&txs).Error; err != nil {
 		s.l.Printf("query blocks from db failed")
 	}
 
 	s.format(txs)
-	if len(txs) == 1 {
-		tx0 = txs[0]
-	}
+	Ravl := s.formatRavlTransaction(txs)
 
 	total, err := s.db.QueryLatestTxBlockHeight()
 	if total == -1 {
-		s.l.Fatal(errors.Wrap(err, "failed to query the latest block height on the active network"))
+		s.l.Print(errors.Wrap(err, "failed to query the latest block height on the active network"))
 	}
+	s.txresponse(c, total, Ravl)
+}
 
-	if len(txs) == 0 {
-		c.JSON(http.StatusOK, gin.H{
-			"paging": map[string]interface{}{
-				"total": total,
-				"end":   txs[len(txs)-1].Height,
-				"begin": txs[0].Height,
-			},
-			"data": nil,
-		})
-		return
+func (s *Server) signedtx(c *gin.Context) {
+	body, _ := ioutil.ReadAll(c.Request.Body)
+	fmt.Println(string(body))
+	var bodymap interface{}
+	if err := json.Unmarshal(body, &bodymap); err != nil {
+		fmt.Println(err)
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"paging": map[string]interface{}{
-			"total":  1,
-			"before": 2,
-			"after":  3,
-		},
-		"data": tx0,
-	})
+	Ravl, _ := s.client.Signedtx(bodymap)
+	s.Hsresponse(c, Ravl)
 }

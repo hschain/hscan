@@ -58,10 +58,12 @@ func (s *Server) Start() error {
 	r.GET("/blocks/:height", s.block)
 	r.GET("/txs", s.txs)
 	r.GET("/txs/:txid", s.tx)
+	r.GET("/total", s.totals)
+	r.GET("/total/:denomination", s.total)
 	r.GET("/account/:address", s.account)
 	r.GET("/minting/status", s.mintingstatus)
 	r.GET("/minting/params", s.mintingparams)
-
+	r.POST("/txs", s.signedtx)
 	s.e.Run(s.addr)
 	return nil
 }

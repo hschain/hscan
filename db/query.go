@@ -19,12 +19,12 @@ func (db *Database) QueryLatestBlockHeight() (int64, error) {
 
 func (db *Database) QueryLatestTxBlockHeight() (int64, error) {
 	var txs schema.Transaction
-	if err := db.Order("height Desc").Limit(1).First(&txs).Error; err != nil {
+	if err := db.Order("id Desc").Limit(1).First(&txs).Error; err != nil {
 		if IsRecordNotFoundError(err) {
 			return 0, nil
 		}
 		return -1, err
 	}
 
-	return txs.Height, nil
+	return int64(txs.ID), nil
 }

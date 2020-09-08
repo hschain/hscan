@@ -19,6 +19,7 @@ type Config struct {
 type NodeConfig struct {
 	NodeServerEndPoint string `yaml:"node_server_endpoint"`
 	LCDServerEndpoint  string `yaml:"lcd_server_endpoint"`
+	PriServerEndpoint  string `yaml:"pri_server_endpoint"`
 }
 
 // WebConfig wraps all required paramaters for boostraping web server
@@ -53,6 +54,7 @@ func ParseConfig() *Config {
 		cfg.Node = NodeConfig{
 			NodeServerEndPoint: viper.GetString("mainnet.node.node_server_endpoint"),
 			LCDServerEndpoint:  viper.GetString("mainnet.node.lcd_server_endpoint"),
+			PriServerEndpoint:  viper.GetString("mainnet.node.pri_server_endpoint"),
 		}
 
 		cfg.Web = WebConfig{
@@ -67,6 +69,7 @@ func ParseConfig() *Config {
 		cfg.Node = NodeConfig{
 			NodeServerEndPoint: viper.GetString("testnet.node.node_server_endpoint"),
 			LCDServerEndpoint:  viper.GetString("testnet.node.lcd_server_endpoint"),
+			PriServerEndpoint:  viper.GetString("testnet.node.pri_server_endpoint"),
 		}
 
 		cfg.Web = WebConfig{

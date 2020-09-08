@@ -4,6 +4,7 @@ mainnet:
   node: 
     lcd_server_endpoint: "http://172.16.0.60:1317"
     node_server_endpoint: "http://172.16.0.60:26657"
+    pri_server_endpoint: "https://wallet.hschain.io"
   web:
     port: 5001
   mysql:
@@ -12,11 +13,12 @@ mainnet:
 
 testnet:
   node: 
-    #lcd_server_endpoint: "http://103.150.214.70:1317"
-    #node_server_endpoint: "http://192.168.15.99:26657"
+    #lcd_server_endpoint: "http://172.16.0.60:1317"
+    #node_server_endpoint: "http://172.16.0.60:26657"
     #node_server_endpoint: "http://51.75.145.123:26657"
     lcd_server_endpoint: "http://127.0.0.1:1317"
     node_server_endpoint: "http://127.0.0.1:26657"
+    pri_server_endpoint: "https://wallet.hschain.io"
   web:
     port: 5001
   mysql:

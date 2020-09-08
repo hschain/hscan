@@ -58,13 +58,16 @@ func (s *Scanner) sync() error {
 	// Query latest block height saved in database
 	dbHeight, err := s.db.QueryLatestBlockHeight()
 	if dbHeight == -1 {
-		s.l.Fatal(errors.Wrap(err, "failed to query the latest block height saved in database"))
+		s.l.Print(errors.Wrap(err, "failed to query the latest block height saved in database"))
+		return err
 	}
 
 	// Query latest block height on the active network
 	latestBlockHeight, err := s.client.LatestBlockHeight()
 	if latestBlockHeight == -1 {
-		s.l.Fatal(errors.Wrap(err, "failed to query the latest block height on the active network"))
+		s.l.Print(errors.Wrap(err, "failed to query the latest block height on the active network"))
+		return err
+
 	}
 
 	// Synchronizing blocks from the scratch will return 0 and will ingest accordingly.
@@ -186,6 +189,9 @@ func (s *Scanner) getTxs(txs []*tmctypes.ResultTx, resBlock *tmctypes.ResultBloc
 			GasWanted:   resp.GasWanted,
 			GasUsed:     resp.GasUsed,
 			Timestamp:   resBlock.Block.Time,
+			Sender:      resp.Events.Flatten()[0].Attributes[0].Value,
+			Recipient:   resp.Events.Flatten()[1].Attributes[0].Value,
+			Amount:      resp.Events.Flatten()[1].Attributes[1].Value,
 		}
 
 		transactions = append(transactions, tempTransaction)
