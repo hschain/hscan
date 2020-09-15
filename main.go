@@ -12,23 +12,23 @@ import (
 	"hscan/server"
 
 	//tmctypes "github.com/tendermint/tendermint/rpc/core/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdk "github.com/zxs-paryada/hschain/types"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/cosmos/cosmos-sdk/x/auth"
-	"github.com/cosmos/cosmos-sdk/x/bank"
-	"github.com/cosmos/cosmos-sdk/x/crisis"
-	distr "github.com/cosmos/cosmos-sdk/x/distribution"
-	"github.com/cosmos/cosmos-sdk/x/genaccounts"
-	"github.com/cosmos/cosmos-sdk/x/genutil"
-	"github.com/cosmos/cosmos-sdk/x/gov"
-	"github.com/cosmos/cosmos-sdk/x/mint"
-	"github.com/cosmos/cosmos-sdk/x/params"
-	paramsclient "github.com/cosmos/cosmos-sdk/x/params/client"
-	"github.com/cosmos/cosmos-sdk/x/slashing"
-	"github.com/cosmos/cosmos-sdk/x/staking"
-	"github.com/cosmos/cosmos-sdk/x/supply"
+	codec "github.com/zxs-paryada/hschain/codec"
+	"github.com/zxs-paryada/hschain/types/module"
+	"github.com/zxs-paryada/hschain/x/auth"
+	"github.com/zxs-paryada/hschain/x/bank"
+	"github.com/zxs-paryada/hschain/x/crisis"
+	distr "github.com/zxs-paryada/hschain/x/distribution"
+	"github.com/zxs-paryada/hschain/x/genaccounts"
+	"github.com/zxs-paryada/hschain/x/genutil"
+	"github.com/zxs-paryada/hschain/x/gov"
+	"github.com/zxs-paryada/hschain/x/mint"
+	"github.com/zxs-paryada/hschain/x/params"
+	paramsclient "github.com/zxs-paryada/hschain/x/params/client"
+	"github.com/zxs-paryada/hschain/x/slashing"
+	"github.com/zxs-paryada/hschain/x/staking"
+	"github.com/zxs-paryada/hschain/x/supply"
 )
 
 var (
@@ -79,7 +79,7 @@ func main() {
 
 	scanner.Start()
 
-	server := server.NewServer("127.0.0.1:"+cfg.Web.Port, l, db, cdc)
+	server := server.NewServer("127.0.0.1:"+cfg.Web.Port, l, db, cdc, client)
 
 	server.Start()
 

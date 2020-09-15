@@ -1,20 +1,20 @@
 package scanner
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
 
 	"hscan/client"
+	"hscan/db"
 	"hscan/schema"
 
-	"hscan/db"
-
-	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/pkg/errors"
 	tmctypes "github.com/tendermint/tendermint/rpc/core/types"
+	"github.com/zxs-paryada/hschain/codec"
+	sdk "github.com/zxs-paryada/hschain/types"
+	"github.com/zxs-paryada/hschain/x/auth/types"
 )
 
 // Scanner wraps the required params to scan blockchain
@@ -58,13 +58,16 @@ func (s *Scanner) sync() error {
 	// Query latest block height saved in database
 	dbHeight, err := s.db.QueryLatestBlockHeight()
 	if dbHeight == -1 {
-		s.l.Fatal(errors.Wrap(err, "failed to query the latest block height saved in database"))
+		s.l.Print(errors.Wrap(err, "failed to query the latest block height saved in database"))
+		return err
 	}
 
 	// Query latest block height on the active network
 	latestBlockHeight, err := s.client.LatestBlockHeight()
 	if latestBlockHeight == -1 {
-		s.l.Fatal(errors.Wrap(err, "failed to query the latest block height on the active network"))
+		s.l.Print(errors.Wrap(err, "failed to query the latest block height on the active network"))
+		return err
+
 	}
 
 	// Synchronizing blocks from the scratch will return 0 and will ingest accordingly.
@@ -108,7 +111,6 @@ func (s *Scanner) process(height int64) error {
 	if err != nil {
 		return fmt.Errorf("failed to get block: %s", err)
 	}
-
 	//Get txs in the block from blockchain
 	txs, err := s.client.GetTxs(block)
 
@@ -134,10 +136,31 @@ func (s *Scanner) process(height int64) error {
 	return nil
 }
 
+func (s *Scanner) getBonus(Height int64) (string, string, error) {
+
+	response, _ := s.client.Mintingbonus(Height)
+
+	var result map[string]interface{}
+	err := json.Unmarshal(response.Body(), &result)
+
+	if err != nil {
+		fmt.Errorf("failed to getBonus scanned data: %s", err)
+		return "", "", err
+	}
+	denom := result["result"].(map[string]interface{})["denom"].(string)
+	amount := result["result"].(map[string]interface{})["amount"].(string)
+	return denom, amount, err
+}
+
 // getBlock parses block information and wrap into Block schema struct
 func (s *Scanner) getBlock(block *tmctypes.ResultBlock) ([]*schema.Block, error) {
 	blocks := make([]*schema.Block, 0)
 
+	denom, amount, err := s.getBonus(block.Block.Height)
+
+	if err != nil {
+		return nil, err
+	}
 	tempBlock := &schema.Block{
 		Height:    block.Block.Height,
 		Proposer:  block.Block.ProposerAddress.String(),
@@ -149,6 +172,8 @@ func (s *Scanner) getBlock(block *tmctypes.ResultBlock) ([]*schema.Block, error)
 		NumTxs:        block.Block.NumTxs,
 		TotalTxs:      block.Block.TotalTxs,
 		Timestamp:     block.Block.Time,
+		Denom:         denom,
+		Amount:        amount,
 	}
 
 	blocks = append(blocks, tempBlock)
@@ -176,6 +201,9 @@ func (s *Scanner) getTxs(txs []*tmctypes.ResultTx, resBlock *tmctypes.ResultBloc
 			return nil, err
 		}
 
+		var result []map[string]interface{}
+		json.Unmarshal(msgsBz, &result)
+
 		tempTransaction := &schema.Transaction{
 			Height:      resp.Height,
 			TxHash:      resp.TxHash,
@@ -186,6 +214,15 @@ func (s *Scanner) getTxs(txs []*tmctypes.ResultTx, resBlock *tmctypes.ResultBloc
 			GasWanted:   resp.GasWanted,
 			GasUsed:     resp.GasUsed,
 			Timestamp:   resBlock.Block.Time,
+			Sender:      "",
+			Recipient:   "",
+			Amount:      "0",
+		}
+
+		if result[0]["success"] == true {
+			tempTransaction.Sender = resp.Events.Flatten()[0].Attributes[0].Value
+			tempTransaction.Recipient = resp.Events.Flatten()[1].Attributes[0].Value
+			tempTransaction.Amount = resp.Events.Flatten()[1].Attributes[1].Value
 		}
 
 		transactions = append(transactions, tempTransaction)

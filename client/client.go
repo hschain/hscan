@@ -1,6 +1,8 @@
 package client
 
 import (
+	"fmt"
+	"strconv"
 	"time"
 
 	"hscan/config"
@@ -15,6 +17,7 @@ import (
 type Client struct {
 	lcdClient *resty.Client
 	rpcClient *rpccli.HTTP
+	cfg       *config.NodeConfig
 }
 
 // NewClient creates a new client with the given config
@@ -29,12 +32,14 @@ func NewClient(cfg config.NodeConfig) *Client {
 	return &Client{
 		lcdClient,
 		rpcClient,
+		&cfg,
 	}
 }
 
 //LatestBlockHeight
 func (c *Client) LatestBlockHeight() (int64, error) {
 	status, err := c.rpcClient.Status()
+
 	if err != nil {
 		return -1, err
 	}
@@ -64,4 +69,59 @@ func (c *Client) GetTxs(block *tmctypes.ResultBlock) ([]*tmctypes.ResultTx, erro
 	}
 
 	return txs, nil
+}
+
+func (c *Client) RestyGet(path string, param string) (*resty.Response, error) {
+	var data string = path + param
+	fmt.Println(data)
+	return resty.New().R().EnableTrace().Get(data)
+}
+
+func (c *Client) RestyPost(path string, param interface{}) (*resty.Response, error) {
+	resp := resty.New().R()
+	resp.SetHeader("Content-Type", "application/json")
+	m := param.(map[string]interface{})
+	resp.SetBody(m)
+	return resp.Post(path)
+}
+
+func (c *Client) QueryAccounts(address string) (*resty.Response, error) {
+
+	return c.RestyGet(c.cfg.LCDServerEndpoint+"/auth/accounts/", address)
+}
+
+func (c *Client) Mintingparameters() (*resty.Response, error) {
+
+	return c.RestyGet(c.cfg.LCDServerEndpoint+"/minting/parameters", "")
+}
+
+func (c *Client) Mintingstatus() (*resty.Response, error) {
+
+	return c.RestyGet(c.cfg.LCDServerEndpoint+"/minting/status", "")
+}
+
+func (c *Client) Mintingbonus(Height int64) (*resty.Response, error) {
+
+	height := strconv.FormatInt(Height, 10)
+	return c.RestyGet(c.cfg.LCDServerEndpoint+"/minting/bonus/", height)
+}
+
+func (c *Client) Signedtx(parameters interface{}) (*resty.Response, error) {
+
+	return c.RestyPost(c.cfg.LCDServerEndpoint+"/txs", parameters)
+}
+
+func (c *Client) Querytotal(address string) (*resty.Response, error) {
+
+	return c.RestyGet(c.cfg.LCDServerEndpoint+"/supply/total/", address)
+}
+
+func (c *Client) Querytotals() (*resty.Response, error) {
+
+	return c.RestyGet(c.cfg.LCDServerEndpoint+"/supply/total", "")
+}
+
+func (c *Client) Queryexchangerate(denom string) (*resty.Response, error) {
+
+	return c.RestyGet(c.cfg.PriServerEndpoint+"/h5/", denom)
 }
