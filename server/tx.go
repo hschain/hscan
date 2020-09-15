@@ -163,5 +163,5 @@ func (s *Server) signedtx(c *gin.Context) {
 		fmt.Println(err)
 	}
 	Ravl, _ := s.client.Signedtx(bodymap)
-	s.queryResponse(c, Ravl)
+	s.mintResponse(c, Ravl)
 }

@@ -2,36 +2,11 @@ package server
 
 import (
 	"hscan/schema"
-	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
 )
-
-func (s *Server) blockResponse(c *gin.Context, total int64, blocks []*schema.Block) {
-
-	if len(blocks) <= 0 {
-		c.JSON(http.StatusOK, gin.H{
-			"paging": map[string]interface{}{
-				"total": total,
-				"end":   0,
-				"begin": 0,
-			},
-			"data": nil,
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"paging": map[string]interface{}{
-			"total": total,
-			"end":   blocks[len(blocks)-1].Height,
-			"begin": blocks[0].Height,
-		},
-		"data": blocks,
-	})
-}
 
 func (s *Server) blocks(c *gin.Context) {
 
