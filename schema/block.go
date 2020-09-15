@@ -14,4 +14,6 @@ type Block struct {
 	TotalTxs      int64              `json:"total_txs"`
 	Timestamp     time.Time          `json:"timestamp" gorm:"default:now()"`
 	Txs           []*RavlTransaction `json:"txs" gorm:"-"`
+	Denom         string             `json:"denom"`
+	Amount        string             `json:"amount"`
 }

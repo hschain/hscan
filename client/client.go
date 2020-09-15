@@ -1,6 +1,8 @@
 package client
 
 import (
+	"fmt"
+	"strconv"
 	"time"
 
 	"hscan/config"
@@ -71,6 +73,7 @@ func (c *Client) GetTxs(block *tmctypes.ResultBlock) ([]*tmctypes.ResultTx, erro
 
 func (c *Client) RestyGet(path string, param string) (*resty.Response, error) {
 	var data string = path + param
+	fmt.Println(data)
 	return resty.New().R().EnableTrace().Get(data)
 }
 
@@ -95,6 +98,12 @@ func (c *Client) Mintingparameters() (*resty.Response, error) {
 func (c *Client) Mintingstatus() (*resty.Response, error) {
 
 	return c.RestyGet(c.cfg.LCDServerEndpoint+"/minting/status", "")
+}
+
+func (c *Client) Mintingbonus(Height int64) (*resty.Response, error) {
+
+	height := strconv.FormatInt(Height, 10)
+	return c.RestyGet(c.cfg.LCDServerEndpoint+"/minting/bonus/", height)
 }
 
 func (c *Client) Signedtx(parameters interface{}) (*resty.Response, error) {

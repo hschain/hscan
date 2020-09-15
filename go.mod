@@ -16,5 +16,5 @@ require (
 	github.com/stumble/gorocksdb v0.0.3 // indirect
 	github.com/tendermint/go-amino v0.15.1 // indirect
 	github.com/tendermint/tendermint v0.32.12
-	github.com/zxs-paryada/hschain v0.0.0-20200901095342-8d6d267d70af
+	github.com/zxs-paryada/hschain v0.0.0-20200910132304-607fb140565e
 )

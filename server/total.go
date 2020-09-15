@@ -1,6 +1,7 @@
 package server
 
 import (
+	"hscan/models"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -13,15 +14,40 @@ func (s *Server) totals(c *gin.Context) {
 	if err != nil {
 		s.l.Print(errors.Wrap(err, "failed to query the latest block height on the active network"))
 		status = nil
+		c.JSON(http.StatusOK, gin.H{
+			"data": nil,
+		})
+		return
 	}
 
-	body, _ := s.ParseResponse(status)
-	coinsMap := body["result"].([]interface{})
-	for i := 0; i < len(coinsMap); i++ {
-		denom := coinsMap[i].(map[string]interface{})["denom"]
-		num, priceunit, _ := s.GetdenomPri(denom)
-		body["result"].([]interface{})[i].(map[string]interface{})["price"] = num
-		body["result"].([]interface{})[i].(map[string]interface{})["priceunit"] = priceunit
+	body, _ := s.parseResponse(status)
+
+	for i := 0; i < len(body["result"].([]interface{})); {
+		denom := body["result"].([]interface{})[i].(map[string]interface{})["denom"]
+
+		if denom == "syscoin" || denom == "SYSCOIN" {
+			body["result"] = append(body["result"].([]interface{})[:i], body["result"].([]interface{})[i+1:]...)
+
+			continue
+		}
+
+		if Priceinto, OK := s.Priceinto[denom.(string)]; OK {
+			body["result"].([]interface{})[i].(map[string]interface{})["price"] = Priceinto.Pirce
+			body["result"].([]interface{})[i].(map[string]interface{})["priceunit"] = Priceinto.Priceunit
+
+		} else {
+			var Priceinto models.Priceinto
+			num, priceunit, err := s.getDenomPrice(denom)
+			body["result"].([]interface{})[i].(map[string]interface{})["price"] = num.(string)
+			body["result"].([]interface{})[i].(map[string]interface{})["priceunit"] = priceunit.(string)
+			if err == nil {
+				Priceinto.Pirce = num.(string)
+				Priceinto.Priceunit = priceunit.(string)
+				s.Priceinto[denom.(string)] = Priceinto
+			}
+
+		}
+		i++
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"data": body,
@@ -35,12 +61,29 @@ func (s *Server) total(c *gin.Context) {
 	if err != nil {
 		s.l.Print(errors.Wrap(err, "failed to query the latest block height on the active network"))
 		parameters = nil
+		c.JSON(http.StatusOK, gin.H{
+			"data": nil,
+		})
+		return
 	}
-	body, _ := s.ParseResponse(parameters)
+	body, _ := s.parseResponse(parameters)
 
-	num, priceunit, _ := s.GetdenomPri(denomination)
-	body["price"] = num
-	body["priceunit"] = priceunit
+	if Priceinto, OK := s.Priceinto[denomination]; OK {
+		body["price"] = Priceinto.Pirce
+		body["priceunit"] = Priceinto.Priceunit
+
+	} else {
+		var Priceinto models.Priceinto
+		num, priceunit, err := s.getDenomPrice(denomination)
+		body["price"] = num.(string)
+		body["priceunit"] = priceunit.(string)
+		if err == nil {
+			Priceinto.Pirce = num.(string)
+			Priceinto.Priceunit = priceunit.(string)
+			s.Priceinto[denomination] = Priceinto
+		}
+
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"data": body,

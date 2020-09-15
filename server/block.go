@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (s *Server) response(c *gin.Context, total int64, blocks []*schema.Block) {
+func (s *Server) blockResponse(c *gin.Context, total int64, blocks []*schema.Block) {
 
 	if len(blocks) <= 0 {
 		c.JSON(http.StatusOK, gin.H{
@@ -56,18 +56,18 @@ func (s *Server) blocks(c *gin.Context) {
 	if err := s.db.Order("height DESC").Where(" height <= ?", height).Limit(iLimit).Find(&blocks).Error; err != nil {
 		s.l.Printf("query blocks from db failed")
 	}
-	s.response(c, total, blocks)
+	s.blockResponse(c, total, blocks)
 }
 
 func (s *Server) block(c *gin.Context) {
-	height := c.Param("height")
+	param := c.Param("param")
 	var blocks []*schema.Block
 
-	if err := s.db.Where("height = ?", height).First(&blocks).Error; err != nil {
+	if err := s.db.Where("height = ? or block_hash = ?", param, param).First(&blocks).Error; err != nil {
 		s.l.Printf("query blocks from db failed")
 	} else {
 		var txs []*schema.Transaction
-		if err := s.db.Where("height = ?", height).Find(&txs).Error; err != nil {
+		if err := s.db.Where("height = ?", param).Find(&txs).Error; err != nil {
 			s.l.Printf("query txs from db failed")
 		}
 
@@ -83,5 +83,5 @@ func (s *Server) block(c *gin.Context) {
 	if total == -1 {
 		s.l.Print(errors.Wrap(err, "failed to query the latest block height on the active network"))
 	}
-	s.response(c, total, blocks)
+	s.blockResponse(c, total, blocks)
 }
