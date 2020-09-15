@@ -3,7 +3,6 @@ package server
 import (
 	"hscan/db"
 	"log"
-	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -20,7 +19,7 @@ type Server struct {
 	db        *db.Database
 	cdc       *codec.Codec
 	client    *client.Client
-	Priceinto map[string]models.Priceinto
+	Priceinto map[string]models.PriceInto
 }
 
 func NewServer(addr string, l *log.Logger, db *db.Database, cdc *codec.Codec, client *client.Client) *Server {
@@ -31,7 +30,7 @@ func NewServer(addr string, l *log.Logger, db *db.Database, cdc *codec.Codec, cl
 		db,
 		cdc,
 		client,
-		make(map[string]models.Priceinto, 1),
+		make(map[string]models.PriceInto, 1),
 	}
 }
 
@@ -50,21 +49,6 @@ func (s *Server) cros(c *gin.Context) {
 	c.Header("Expires", "0")
 	c.Header("Connection", "keep-alive")
 
-}
-
-func (s *Server) updatePriceinto() {
-
-	for {
-		for k, v := range s.Priceinto {
-			Pirce, Priceunit, err := s.getDenomPrice(k)
-			if err != nil {
-				continue
-			}
-			v.Pirce = Pirce.(string)
-			v.Priceunit = Priceunit.(string)
-		}
-		time.Sleep(time.Duration(5) * time.Minute)
-	}
 }
 
 func (s *Server) Start() error {
