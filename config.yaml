@@ -23,4 +23,4 @@ testnet:
     port: 5001
   mysql:
    # mysql_res : "hschain:hschain@tcp(192.168.15.99:3306)/hschain?charset=utf8mb4&collation=utf8mb4_unicode_ci&parseTime=true"
-    mysql_res : "root:mingshan@tcp(127.0.0.1:3306)/hschain?charset=utf8mb4&collation=utf8mb4_unicode_ci&parseTime=true"
+    mysql_res : "hscan:123456@tcp(127.0.0.1:3306)/hscan?charset=utf8mb4&collation=utf8mb4_unicode_ci&parseTime=true"

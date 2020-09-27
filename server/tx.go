@@ -11,7 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
-	sdk "github.com/zxs-paryada/hschain/types"
+	sdk "github.com/hschain/hschain/types"
 )
 
 func (s *Server) txresponse(c *gin.Context, total int64, txs []*schema.RavlTransaction) {
