@@ -9,7 +9,7 @@ import (
 	"hscan/client"
 	"hscan/models"
 
-	"github.com/zxs-paryada/hschain/codec"
+	"github.com/hschain/hschain/codec"
 )
 
 type Server struct {
@@ -57,6 +57,8 @@ func (s *Server) Start() error {
 	r := s.e.Group("/api/v1")
 	r.Use(s.cros)
 
+	r.GET("/tps", s.tps)
+	r.GET("/nodes", s.nodes)
 	r.GET("/blocks", s.blocks)
 	r.GET("/blocks/:param", s.block)
 	r.GET("/txs", s.txs)

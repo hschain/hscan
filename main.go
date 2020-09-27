@@ -12,23 +12,23 @@ import (
 	"hscan/server"
 
 	//tmctypes "github.com/tendermint/tendermint/rpc/core/types"
-	sdk "github.com/zxs-paryada/hschain/types"
+	sdk "github.com/hschain/hschain/types"
 
-	codec "github.com/zxs-paryada/hschain/codec"
-	"github.com/zxs-paryada/hschain/types/module"
-	"github.com/zxs-paryada/hschain/x/auth"
-	"github.com/zxs-paryada/hschain/x/bank"
-	"github.com/zxs-paryada/hschain/x/crisis"
-	distr "github.com/zxs-paryada/hschain/x/distribution"
-	"github.com/zxs-paryada/hschain/x/genaccounts"
-	"github.com/zxs-paryada/hschain/x/genutil"
-	"github.com/zxs-paryada/hschain/x/gov"
-	"github.com/zxs-paryada/hschain/x/mint"
-	"github.com/zxs-paryada/hschain/x/params"
-	paramsclient "github.com/zxs-paryada/hschain/x/params/client"
-	"github.com/zxs-paryada/hschain/x/slashing"
-	"github.com/zxs-paryada/hschain/x/staking"
-	"github.com/zxs-paryada/hschain/x/supply"
+	codec "github.com/hschain/hschain/codec"
+	"github.com/hschain/hschain/types/module"
+	"github.com/hschain/hschain/x/auth"
+	"github.com/hschain/hschain/x/bank"
+	"github.com/hschain/hschain/x/crisis"
+	distr "github.com/hschain/hschain/x/distribution"
+	"github.com/hschain/hschain/x/genaccounts"
+	"github.com/hschain/hschain/x/genutil"
+	"github.com/hschain/hschain/x/gov"
+	"github.com/hschain/hschain/x/mint"
+	"github.com/hschain/hschain/x/params"
+	paramsclient "github.com/hschain/hschain/x/params/client"
+	"github.com/hschain/hschain/x/slashing"
+	"github.com/hschain/hschain/x/staking"
+	"github.com/hschain/hschain/x/supply"
 )
 
 var (
@@ -71,7 +71,7 @@ func main() {
 
 	db := db.NewDB(cfg.Mysql)
 	db.LogMode(true)
-	db.AutoMigrate(&schema.Block{}, &schema.Transaction{})
+	db.AutoMigrate(&schema.Block{}, &schema.Transaction{}, &schema.NodeInfo{})
 
 	cdc := newCodec()
 

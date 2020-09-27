@@ -45,3 +45,9 @@ type SignedTx struct {
 	Tx   string `json:"tx" gorm:"pk"`
 	Mode string `json:"mode" gorm:"not null"`
 }
+
+// NoneInfo defines the schema for nodeinfo information
+type NodeInfo struct {
+	NodeName string `json:"name"  gorm:"not null"`
+	NodeUrl  string `json:"url" gorm:"not null"`
+}

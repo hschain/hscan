@@ -3,7 +3,7 @@ package models
 import (
 	"time"
 
-	sdk "github.com/zxs-paryada/hschain/types"
+	sdk "github.com/hschain/hschain/types"
 )
 
 type Tx struct {
