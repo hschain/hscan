@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"hscan/models"
 	"strings"
 	"time"
@@ -17,6 +18,17 @@ func (s *Server) updatePriceinto() {
 			v.Pirce = Pirce.(string)
 			v.Priceunit = Priceunit.(string)
 		}
+
+		Number, err := s.client.QueryUsersNumber()
+		if err != nil {
+			s.l.Printf("query Users of Number failed")
+			continue
+		}
+
+		var result map[string]interface{}
+		err = json.Unmarshal(Number.Body(), &result)
+		UsersNumber := result["result"].(map[string]interface{})["users_num"].(float64)
+		s.UsersNumber = (int32)(UsersNumber)
 		time.Sleep(time.Duration(5) * time.Minute)
 	}
 }

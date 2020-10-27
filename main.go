@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -65,21 +66,24 @@ func main() {
 	cfg := config.ParseConfig()
 	l.Printf("config is %+v", *cfg)
 
+	fmt.Println(cfg.Web.Ip + ":" + cfg.Web.Port)
 	client := client.NewClient(
 		cfg.Node,
 	)
 
 	db := db.NewDB(cfg.Mysql)
 	db.LogMode(true)
-	db.AutoMigrate(&schema.Block{}, &schema.Transaction{}, &schema.NodeInfo{})
-
+	db.AutoMigrate(&schema.Block{}, &schema.Transaction{}, &schema.NodeInfo{}, &schema.PersonAlassets{}, &schema.VersionControl{}, &schema.UserVersion{})
+	db.Model(&schema.PersonAlassets{}).AddUniqueIndex("idx_address_denom", "address", "denom")
+	db.Model(&schema.VersionControl{}).AddUniqueIndex("idx_version_control", "app", "platform")
+	db.Model(&schema.UserVersion{}).AddUniqueIndex("idx_version", "address", "app", "platform")
 	cdc := newCodec()
 
 	scanner := scanner.NewScanner(l, client, db, cdc)
 
 	scanner.Start()
 
-	server := server.NewServer("127.0.0.1:"+cfg.Web.Port, l, db, cdc, client)
+	server := server.NewServer(cfg.Web.Ip+":"+cfg.Web.Port, l, db, cdc, client)
 
 	server.Start()
 

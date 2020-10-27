@@ -125,3 +125,8 @@ func (c *Client) Queryexchangerate(denom string) (*resty.Response, error) {
 
 	return c.RestyGet(c.cfg.PriServerEndpoint+"/h5/", denom)
 }
+
+func (c *Client) QueryUsersNumber() (*resty.Response, error) {
+
+	return c.RestyGet(c.cfg.PriServerEndpoint+"/h5/hsc_users_num", "")
+}

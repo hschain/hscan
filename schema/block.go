@@ -4,7 +4,7 @@ import "time"
 
 // Block defines the schema for block information
 type Block struct {
-	Height        int64              `json:"height" gorm:"pk"`
+	Height        int64              `json:"height" gorm:"unique"`
 	Proposer      string             `json:"proposer"`
 	Moniker       string             `json:"moniker"`
 	BlockHash     string             `json:"block_hash" gorm:"unique"`

@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strconv"
 	"time"
 
 	"hscan/client"
 	"hscan/db"
+	"hscan/models"
 	"hscan/schema"
 
 	"github.com/hschain/hschain/codec"
@@ -205,28 +207,63 @@ func (s *Scanner) getTxs(txs []*tmctypes.ResultTx, resBlock *tmctypes.ResultBloc
 		json.Unmarshal(msgsBz, &result)
 
 		tempTransaction := &schema.Transaction{
-			Height:      resp.Height,
-			TxHash:      resp.TxHash,
-			Code:        resp.Code, // 0 is success
-			RawMessages: string(msgsBz),
-			Fee:         string(stdTx.Fee.Bytes()),
-			Memo:        stdTx.GetMemo(),
-			GasWanted:   resp.GasWanted,
-			GasUsed:     resp.GasUsed,
-			Timestamp:   resBlock.Block.Time,
-			Sender:      "",
-			Recipient:   "",
-			Amount:      "0",
+			Height:          resp.Height,
+			TxHash:          resp.TxHash,
+			Code:            resp.Code, // 0 is success
+			RawMessages:     string(msgsBz),
+			Fee:             string(stdTx.Fee.Bytes()),
+			Memo:            stdTx.GetMemo(),
+			GasWanted:       resp.GasWanted,
+			GasUsed:         resp.GasUsed,
+			Timestamp:       resBlock.Block.Time,
+			Sender:          "",
+			Recipient:       "",
+			Amount:          "0",
+			SenderNotice:    0,
+			RecipientNotice: 0,
 		}
 
 		if result[0]["success"] == true {
 			tempTransaction.Sender = resp.Events.Flatten()[0].Attributes[0].Value
 			tempTransaction.Recipient = resp.Events.Flatten()[1].Attributes[0].Value
 			tempTransaction.Amount = resp.Events.Flatten()[1].Attributes[1].Value
+			s.getAlassets(tempTransaction.Sender)
+			s.getAlassets(tempTransaction.Recipient)
 		}
+		var messages []schema.Message
+		json.Unmarshal([]byte(tempTransaction.RawMessages), &messages)
 
+		tempTransaction.Messages = messages
 		transactions = append(transactions, tempTransaction)
 	}
 
 	return transactions, nil
+}
+
+func (s *Scanner) getAlassets(address string) error {
+	Account, err := s.client.QueryAccounts(address)
+	if err != nil {
+		s.l.Print(errors.Wrap(err, "failed to query the latest block height on the active network"))
+		Account = nil
+		return err
+	}
+
+	var result models.AccountInfo
+
+	if err := json.Unmarshal(Account.Body(), &result); err != nil {
+		return err
+	}
+
+	var Alassets []schema.PersonAlassets
+	for i := 0; i < len(result.Result.Value.Coins); i++ {
+		amount, _ := strconv.Atoi(result.Result.Value.Coins[i]["amount"].(string))
+		alassets := schema.PersonAlassets{
+			Address: address,
+			Amount:  (int64)(amount),
+			Denom:   result.Result.Value.Coins[i]["denom"].(string),
+		}
+		Alassets = append(Alassets, alassets)
+	}
+
+	return s.db.InsertScannedAlassetsData(Alassets)
 }
