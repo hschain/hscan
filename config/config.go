@@ -24,6 +24,7 @@ type NodeConfig struct {
 
 // WebConfig wraps all required paramaters for boostraping web server
 type WebConfig struct {
+	Ip   string `yaml:"ip"`
 	Port string `yaml:"port"`
 }
 
@@ -58,6 +59,7 @@ func ParseConfig() *Config {
 		}
 
 		cfg.Web = WebConfig{
+			Ip:   viper.GetString("mainnet.web.ip"),
 			Port: viper.GetString("mainnet.web.port"),
 		}
 
@@ -73,6 +75,7 @@ func ParseConfig() *Config {
 		}
 
 		cfg.Web = WebConfig{
+			Ip:   viper.GetString("testnet.web.ip"),
 			Port: viper.GetString("testnet.web.port"),
 		}
 

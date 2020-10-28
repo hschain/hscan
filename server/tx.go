@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/pkg/errors"
 	sdk "github.com/hschain/hschain/types"
+	"github.com/pkg/errors"
 )
 
 func (s *Server) txresponse(c *gin.Context, total int64, txs []*schema.RavlTransaction) {
@@ -61,7 +61,7 @@ func (s *Server) format(txs []*schema.Transaction) {
 
 	for i := range txs {
 		var logs sdk.ABCIMessageLogs
-		var messages []*schema.Message
+		var messages []schema.Message
 		s.cdc.UnmarshalJSON([]byte(txs[i].RawMessages), &logs)
 
 		s.l.Printf("log is %+v", logs)
@@ -69,7 +69,7 @@ func (s *Server) format(txs []*schema.Transaction) {
 		for j := 0; j < len(logs); j++ {
 
 			//convert
-			msg := &schema.Message{
+			msg := schema.Message{
 				MsgIndex: logs[j].MsgIndex,
 				Success:  logs[j].Success,
 				Log:      logs[j].Log,
@@ -106,7 +106,9 @@ func (s *Server) format(txs []*schema.Transaction) {
 func (s *Server) txs(c *gin.Context) {
 	height, _ := strconv.ParseInt(c.DefaultQuery("begin", "0"), 10, 64)
 	limit := c.DefaultQuery("limit", "5")
+	timetable := c.DefaultQuery("timetable", "null")
 	address := c.DefaultQuery("address", "null")
+	denom := c.DefaultQuery("denom", "uhst")
 	iLimit, _ := strconv.ParseInt(limit, 10, 64)
 	if iLimit <= 0 {
 		iLimit = 5
@@ -126,13 +128,34 @@ func (s *Server) txs(c *gin.Context) {
 			s.l.Printf("query blocks from db failed")
 		}
 	} else {
-		if err := s.db.Order("id DESC").Where(" id <= ? and (Sender = ? or Recipient = ?)", height, address, address).Limit(iLimit).Find(&txs).Error; err != nil {
-			s.l.Printf("query blocks from db failed")
+		if timetable == "null" {
+			if err := s.db.Order("id DESC").Where(" id <= ? and (Sender = ? or Recipient = ?)", height, address, address).Limit(iLimit).Find(&txs).Error; err != nil {
+				s.l.Printf("query blocks from db failed")
+			}
 		}
+		if timetable == "history" {
+			if err := s.db.Order("id DESC").Where(" id <= ? and (Sender = ? or Recipient = ?) and denom = ?", height, address, address, denom).Limit(iLimit).Find(&txs).Error; err != nil {
+				s.l.Printf("query blocks from db failed")
+			}
+			s.db.Model(&schema.Transaction{}).Where("id <= ? and (Sender = ? and sender_notice = 0) and denom = ?", height, address, address, denom).Update("sender_notice", 1)
+			s.db.Model(&schema.Transaction{}).Where("id <= ? and (Recipient = ? and RecipientNotice = 0) and denom = ?", height, address, address, denom).Update("RecipientNotice", 1)
+		}
+		if timetable == "now" {
+			if err := s.db.Order("id DESC").Where(" id <= ? and ((Sender = ? and sender_notice = 0) or (Recipient = ? and RecipientNotice = 0)) and denom = ?", height, address, address, denom).Limit(iLimit).Find(&txs).Error; err != nil {
+				s.l.Printf("query blocks from db failed")
+			}
+			s.db.Model(&schema.Transaction{}).Where("(id <= ? and id > ?) and (Sender = ? and sender_notice = 0) and denom = ?", height, height-iLimit, address, address, denom).Update("sender_notice", 1)
+			s.db.Model(&schema.Transaction{}).Where("(id <= ? and id > ?) and (Recipient = ? and RecipientNotice = 0) and denom = ?", height, height-iLimit, address, address, denom).Update("RecipientNotice", 1)
+		}
+
+		Acount, err := s.db.QueryAddressTxAcount(address)
+		if Acount == -1 {
+			s.l.Print(errors.Wrap(err, "failed to query the latest block height on the active network"))
+		}
+		total = Acount
 	}
 
 	s.format(txs)
-
 	Ravl := s.formatRavlTransaction(txs)
 	s.txresponse(c, total, Ravl)
 }
