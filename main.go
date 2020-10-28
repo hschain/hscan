@@ -73,7 +73,7 @@ func main() {
 
 	db := db.NewDB(cfg.Mysql)
 	db.LogMode(true)
-	db.AutoMigrate(&schema.Block{}, &schema.Transaction{}, &schema.NodeInfo{}, &schema.PersonAlassets{}, &schema.VersionControl{}, &schema.UserVersion{})
+	db.Set("gorm:table_options", "ENGINE=InnoDB DEFAULT CHARSET=utf8").AutoMigrate(&schema.Block{}, &schema.Transaction{}, &schema.NodeInfo{}, &schema.PersonAlassets{}, &schema.VersionControl{}, &schema.UserVersion{})
 	db.Model(&schema.PersonAlassets{}).AddUniqueIndex("idx_address_denom", "address", "denom")
 	db.Model(&schema.VersionControl{}).AddUniqueIndex("idx_version_control", "app", "platform")
 	db.Model(&schema.UserVersion{}).AddUniqueIndex("idx_version", "address", "app", "platform")

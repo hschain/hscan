@@ -108,6 +108,7 @@ func (s *Server) txs(c *gin.Context) {
 	limit := c.DefaultQuery("limit", "5")
 	timetable := c.DefaultQuery("timetable", "null")
 	address := c.DefaultQuery("address", "null")
+	denom := c.DefaultQuery("denom", "uhst")
 	iLimit, _ := strconv.ParseInt(limit, 10, 64)
 	if iLimit <= 0 {
 		iLimit = 5
@@ -127,12 +128,24 @@ func (s *Server) txs(c *gin.Context) {
 			s.l.Printf("query blocks from db failed")
 		}
 	} else {
-		if err := s.db.Order("id DESC").Where(" id <= ? and (Sender = ? or Recipient = ?)", height, address, address).Limit(iLimit).Find(&txs).Error; err != nil {
-			s.l.Printf("query blocks from db failed")
+		if timetable == "null" {
+			if err := s.db.Order("id DESC").Where(" id <= ? and (Sender = ? or Recipient = ?)", height, address, address).Limit(iLimit).Find(&txs).Error; err != nil {
+				s.l.Printf("query blocks from db failed")
+			}
 		}
 		if timetable == "history" {
-			s.db.Model(&schema.Transaction{}).Where("Sender = ? and sender_notice = 0", address, address).Update("sender_notice", 1)
-			s.db.Model(&schema.Transaction{}).Where("Recipient = ? and RecipientNotice = 0", address, address).Update("RecipientNotice", 1)
+			if err := s.db.Order("id DESC").Where(" id <= ? and (Sender = ? or Recipient = ?) and denom = ?", height, address, address, denom).Limit(iLimit).Find(&txs).Error; err != nil {
+				s.l.Printf("query blocks from db failed")
+			}
+			s.db.Model(&schema.Transaction{}).Where("id <= ? and (Sender = ? and sender_notice = 0) and denom = ?", height, address, address, denom).Update("sender_notice", 1)
+			s.db.Model(&schema.Transaction{}).Where("id <= ? and (Recipient = ? and RecipientNotice = 0) and denom = ?", height, address, address, denom).Update("RecipientNotice", 1)
+		}
+		if timetable == "now" {
+			if err := s.db.Order("id DESC").Where(" id <= ? and ((Sender = ? and sender_notice = 0) or (Recipient = ? and RecipientNotice = 0)) and denom = ?", height, address, address, denom).Limit(iLimit).Find(&txs).Error; err != nil {
+				s.l.Printf("query blocks from db failed")
+			}
+			s.db.Model(&schema.Transaction{}).Where("(id <= ? and id > ?) and (Sender = ? and sender_notice = 0) and denom = ?", height, height-iLimit, address, address, denom).Update("sender_notice", 1)
+			s.db.Model(&schema.Transaction{}).Where("(id <= ? and id > ?) and (Recipient = ? and RecipientNotice = 0) and denom = ?", height, height-iLimit, address, address, denom).Update("RecipientNotice", 1)
 		}
 
 		Acount, err := s.db.QueryAddressTxAcount(address)

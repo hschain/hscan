@@ -42,6 +42,7 @@ type Transaction struct {
 	Sender          string    `json:"sender" gorm:"not null"`
 	Recipient       string    `json:"recipient" gorm:"not null"`
 	Amount          string    `json:"amount" gorm:"not null"`
+	Denom           string    `json:"denom" gorm:"not null"`
 	SenderNotice    int       `json:"sender_notice" gorm:"not null"`
 	RecipientNotice int       `json:"recipient_notice" gorm:"not null"`
 }

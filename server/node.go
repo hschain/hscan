@@ -94,7 +94,7 @@ func (s *Server) frame(c *gin.Context) {
 }
 
 func (s *Server) version(c *gin.Context) {
-	var infos []*schema.VersionControl
+	var infos schema.VersionControl
 
 	address := c.DefaultQuery("address", "null")
 	app := c.DefaultQuery("app", "hscan")

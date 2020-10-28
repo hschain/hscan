@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 	"time"
 
 	"hscan/client"
@@ -191,6 +192,7 @@ func (s *Scanner) getTxs(txs []*tmctypes.ResultTx, resBlock *tmctypes.ResultBloc
 
 		err := s.cdc.UnmarshalBinaryLengthPrefixed(txs[i].Tx, &stdTx)
 		if err != nil {
+			s.l.Print(errors.Wrap(err, "failed to Unmarshal Binary Length Prefixed"))
 			return nil, err
 		}
 
@@ -200,11 +202,17 @@ func (s *Scanner) getTxs(txs []*tmctypes.ResultTx, resBlock *tmctypes.ResultBloc
 
 		msgsBz, err := s.cdc.MarshalJSON(resp.Logs)
 		if err != nil {
+			s.l.Print(errors.Wrap(err, "failed to tx log marshal JSON"))
 			return nil, err
 		}
 
 		var result []map[string]interface{}
-		json.Unmarshal(msgsBz, &result)
+		err = json.Unmarshal(msgsBz, &result)
+
+		if err != nil {
+			s.l.Print(errors.Wrap(err, "failed to tx log  Unmarshal"))
+			return nil, err
+		}
 
 		tempTransaction := &schema.Transaction{
 			Height:          resp.Height,
@@ -226,7 +234,13 @@ func (s *Scanner) getTxs(txs []*tmctypes.ResultTx, resBlock *tmctypes.ResultBloc
 		if result[0]["success"] == true {
 			tempTransaction.Sender = resp.Events.Flatten()[0].Attributes[0].Value
 			tempTransaction.Recipient = resp.Events.Flatten()[1].Attributes[0].Value
-			tempTransaction.Amount = resp.Events.Flatten()[1].Attributes[1].Value
+			Amount := strings.Split(resp.Events.Flatten()[1].Attributes[1].Value, "u")
+			if len(Amount) < 2 {
+				tempTransaction.Amount = resp.Events.Flatten()[1].Attributes[1].Value
+				tempTransaction.Denom = "unknow"
+			}
+			tempTransaction.Amount = Amount[0]
+			tempTransaction.Denom = "u" + Amount[1]
 			s.getAlassets(tempTransaction.Sender)
 			s.getAlassets(tempTransaction.Recipient)
 		}
