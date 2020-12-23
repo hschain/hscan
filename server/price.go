@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"hscan/models"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -28,7 +29,9 @@ func (s *Server) updatePriceinto() {
 		var result map[string]interface{}
 		err = json.Unmarshal(Number.Body(), &result)
 		UsersNumber := result["result"].(map[string]interface{})["users_num"].(float64)
+		held_by_users := result["result"].(map[string]interface{})["held_by_users"].(string)
 		s.UsersNumber = (int32)(UsersNumber)
+		s.Held_by_users, _ = strconv.ParseFloat(held_by_users, 64)
 		time.Sleep(time.Duration(5) * time.Minute)
 	}
 }

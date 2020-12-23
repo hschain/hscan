@@ -193,17 +193,17 @@ func (s *Scanner) getTxs(txs []*tmctypes.ResultTx, resBlock *tmctypes.ResultBloc
 		err := s.cdc.UnmarshalBinaryLengthPrefixed(txs[i].Tx, &stdTx)
 		if err != nil {
 			s.l.Print(errors.Wrap(err, "failed to Unmarshal Binary Length Prefixed"))
-			return nil, err
+			return nil, nil
 		}
 
-		//s.l.Printf("stdTx is %+v", stdTx)
+		//	s.l.Printf("stdTx is %+v", stdTx)
 
 		resp := sdk.NewResponseResultTx(txs[i], stdTx, resBlock.Block.Time.Format(time.RFC3339))
 
 		msgsBz, err := s.cdc.MarshalJSON(resp.Logs)
 		if err != nil {
 			s.l.Print(errors.Wrap(err, "failed to tx log marshal JSON"))
-			return nil, err
+			return nil, nil
 		}
 
 		var result []map[string]interface{}
@@ -212,6 +212,10 @@ func (s *Scanner) getTxs(txs []*tmctypes.ResultTx, resBlock *tmctypes.ResultBloc
 		if err != nil {
 			s.l.Print(errors.Wrap(err, "failed to tx log  Unmarshal"))
 			return nil, err
+		}
+
+		if len(resp.Events.Flatten()) < 2 {
+			return nil, nil
 		}
 
 		tempTransaction := &schema.Transaction{
@@ -238,9 +242,10 @@ func (s *Scanner) getTxs(txs []*tmctypes.ResultTx, resBlock *tmctypes.ResultBloc
 			if len(Amount) < 2 {
 				tempTransaction.Amount = resp.Events.Flatten()[1].Attributes[1].Value
 				tempTransaction.Denom = "unknow"
+			} else {
+				tempTransaction.Amount = Amount[0]
+				tempTransaction.Denom = "u" + Amount[1]
 			}
-			tempTransaction.Amount = Amount[0]
-			tempTransaction.Denom = "u" + Amount[1]
 			s.getAlassets(tempTransaction.Sender)
 			s.getAlassets(tempTransaction.Recipient)
 		}
@@ -272,6 +277,7 @@ func (s *Scanner) getAlassets(address string) error {
 	for i := 0; i < len(result.Result.Value.Coins); i++ {
 		amount, _ := strconv.Atoi(result.Result.Value.Coins[i]["amount"].(string))
 		alassets := schema.PersonAlassets{
+
 			Address: address,
 			Amount:  (int64)(amount),
 			Denom:   result.Result.Value.Coins[i]["denom"].(string),

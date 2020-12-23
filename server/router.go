@@ -14,14 +14,15 @@ import (
 )
 
 type Server struct {
-	addr        string
-	e           *gin.Engine
-	l           *log.Logger
-	db          *db.Database
-	cdc         *codec.Codec
-	client      *client.Client
-	Priceinto   map[string]models.PriceInto
-	UsersNumber int32
+	addr          string
+	e             *gin.Engine
+	l             *log.Logger
+	db            *db.Database
+	cdc           *codec.Codec
+	client        *client.Client
+	Priceinto     map[string]models.PriceInto
+	UsersNumber   int32
+	Held_by_users float64
 }
 
 func NewServer(addr string, l *log.Logger, db *db.Database, cdc *codec.Codec, client *client.Client) *Server {
@@ -33,6 +34,7 @@ func NewServer(addr string, l *log.Logger, db *db.Database, cdc *codec.Codec, cl
 		cdc,
 		client,
 		make(map[string]models.PriceInto, 1),
+		0,
 		0,
 	}
 }

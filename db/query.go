@@ -30,13 +30,12 @@ func (db *Database) QueryLatestTxBlockHeight() (int64, error) {
 }
 
 func (db *Database) QueryAddressTxAcount(address string) (int64, error) {
-	var txs []schema.Transaction
-
-	if err := db.Order("id DESC").Where(" Sender = ? or Recipient = ?", address, address).Find(&txs).Error; err != nil {
+	var count int64
+	if err := db.Model(&schema.Transaction{}).Where(" Sender = ? or Recipient = ?", address, address).Count(&count).Error; err != nil {
 		if IsRecordNotFoundError(err) {
 			return 0, nil
 		}
 		return -1, err
 	}
-	return int64(len(txs)), nil
+	return count, nil
 }
