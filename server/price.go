@@ -28,6 +28,9 @@ func (s *Server) updatePriceinto() {
 
 		var result map[string]interface{}
 		err = json.Unmarshal(Number.Body(), &result)
+		if err != nil {
+			continue
+		}
 		UsersNumber := result["result"].(map[string]interface{})["users_num"].(float64)
 		held_by_users := result["result"].(map[string]interface{})["held_by_users"].(string)
 		s.UsersNumber = (int32)(UsersNumber)
@@ -40,7 +43,7 @@ func (s *Server) queryDenomPrice(denom interface{}) (interface{}, interface{}, e
 
 	nom := strings.Replace(denom.(string), "u", "", 1)
 	nom = strings.ToTitle(nom)
-	if denom == "hst" || denom == "uhst" {
+	if denom == "hst" || denom == "uhst" || denom == "hst0" || denom == "uhst0" {
 		status, err := s.client.Queryexchangerate("hst_pri")
 		if err != nil {
 			return "0.00000", nil, err
