@@ -68,7 +68,7 @@ func (s *Server) getTopAccounts(c *gin.Context) {
 		ipage = 0
 	}
 
-	if err := s.db.Order("denom Desc").Where("denom = ?", denom).Limit(500).Find(&Alassets).Error; err != nil {
+	if err := s.db.Order("amount Desc").Where("denom = ?", denom).Limit(500).Find(&Alassets).Error; err != nil {
 		s.l.Printf("query blocks from db failed")
 	}
 

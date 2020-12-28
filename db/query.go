@@ -4,6 +4,18 @@ import (
 	"hscan/schema"
 )
 
+func (db *Database) QueryBlockCount() (int64, error) {
+	var count int64
+	if err := db.Model(&schema.Block{}).Count(&count).Error; err != nil {
+		if IsRecordNotFoundError(err) {
+			return 0, nil
+		}
+		return -1, err
+	}
+
+	return count, nil
+}
+
 // QueryLatestBlockHeight queries latest block height in database
 func (db *Database) QueryLatestBlockHeight() (int64, error) {
 	var block schema.Block
@@ -15,6 +27,19 @@ func (db *Database) QueryLatestBlockHeight() (int64, error) {
 	}
 
 	return block.Height, nil
+}
+
+func (db *Database) QueryTxBlockCount() (int64, error) {
+	var count int64
+
+	if err := db.Model(&schema.Transaction{}).Count(&count).Error; err != nil {
+		if IsRecordNotFoundError(err) {
+			return 0, nil
+		}
+		return -1, err
+	}
+
+	return count, nil
 }
 
 func (db *Database) QueryLatestTxBlockHeight() (int64, error) {

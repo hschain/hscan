@@ -114,34 +114,34 @@ func (s *Server) txs(c *gin.Context) {
 		iLimit = 5
 	}
 
-	total, err := s.db.QueryLatestTxBlockHeight()
+	total, err := s.db.QueryTxBlockCount()
 	if total == -1 {
 		s.l.Print(errors.Wrap(err, "failed to query the latest block height on the active network"))
 	}
 
 	if height <= 0 {
-		height = total
+		height, err = s.db.QueryLatestTxBlockHeight()
 	}
 	var txs []*schema.Transaction
 	if address == "null" {
-		if err := s.db.Order("id DESC").Where(" id <= ?", height).Limit(iLimit).Find(&txs).Error; err != nil {
+		if err := s.db.Order("height DESC").Where(" id <= ? and (Sender <> ? and Recipient <> ?)", height, s.Hschain.SupplementAddress, s.Hschain.SupplementAddress).Limit(iLimit).Find(&txs).Error; err != nil {
 			s.l.Printf("query blocks from db failed")
 		}
 	} else {
 		if timetable == "null" {
-			if err := s.db.Order("id DESC").Where(" id <= ? and (Sender = ? or Recipient = ?)", height, address, address).Limit(iLimit).Find(&txs).Error; err != nil {
+			if err := s.db.Order("height DESC").Where(" id <= ? and (Sender = ? or Recipient = ?) and (Sender <> ? and Recipient <> ?)", height, address, address, s.Hschain.SupplementAddress, s.Hschain.SupplementAddress).Limit(iLimit).Find(&txs).Error; err != nil {
 				s.l.Printf("query blocks from db failed")
 			}
 		}
 		if timetable == "history" {
-			if err := s.db.Order("id DESC").Where(" id <= ? and (Sender = ? or Recipient = ?) and denom = ?", height, address, address, denom).Limit(iLimit).Find(&txs).Error; err != nil {
+			if err := s.db.Order("height DESC").Where(" id <= ? and (Sender = ? or Recipient = ?) and (Sender <> ? and Recipient <> ?) and denom = ?", height, address, address, s.Hschain.SupplementAddress, s.Hschain.SupplementAddress, denom).Limit(iLimit).Find(&txs).Error; err != nil {
 				s.l.Printf("query blocks from db failed")
 			}
 			s.db.Model(&schema.Transaction{}).Where("id <= ? and (Sender = ? and sender_notice = 0) and denom = ?", height, address, address, denom).Update("sender_notice", 1)
 			s.db.Model(&schema.Transaction{}).Where("id <= ? and (Recipient = ? and RecipientNotice = 0) and denom = ?", height, address, address, denom).Update("RecipientNotice", 1)
 		}
 		if timetable == "now" {
-			if err := s.db.Order("id DESC").Where(" id <= ? and ((Sender = ? and sender_notice = 0) or (Recipient = ? and RecipientNotice = 0)) and denom = ?", height, address, address, denom).Limit(iLimit).Find(&txs).Error; err != nil {
+			if err := s.db.Order("height DESC").Where(" id <= ? and ((Sender = ? and sender_notice = 0) or (Recipient = ? and RecipientNotice = 0)) and (Sender <> ? and Recipient <> ?)  and denom = ?", height, address, address, s.Hschain.SupplementAddress, s.Hschain.SupplementAddress, denom).Limit(iLimit).Find(&txs).Error; err != nil {
 				s.l.Printf("query blocks from db failed")
 			}
 			s.db.Model(&schema.Transaction{}).Where("(id <= ? and id > ?) and (Sender = ? and sender_notice = 0) and denom = ?", height, height-iLimit, address, address, denom).Update("sender_notice", 1)
@@ -171,7 +171,7 @@ func (s *Server) tx(c *gin.Context) {
 	s.format(txs)
 	Ravl := s.formatRavlTransaction(txs)
 
-	total, err := s.db.QueryLatestTxBlockHeight()
+	total, err := s.db.QueryTxBlockCount()
 	if total == -1 {
 		s.l.Print(errors.Wrap(err, "failed to query the latest block height on the active network"))
 	}

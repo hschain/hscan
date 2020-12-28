@@ -173,6 +173,10 @@ github.com/hashicorp/serf v0.8.2/go.mod h1:6hOLApaqBFA1NXqRQAsxw9QxuDEvNxSQRwA/J
 github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpOxQnU=
 github.com/hschain/hschain v0.6.1 h1:aQFv0oT56GkxGgKSAGIZT3HIMGhjC2QxKMDY9kfvJ7k=
 github.com/hschain/hschain v0.6.1/go.mod h1:gurFTpXSDsSKTp49PE/EqhyWBu3syvPNI12rolO/Vi0=
+github.com/hschain/hschain v0.6.3 h1:CV9DlUB3n2MLjJShSYLEiaMqy157A4r3v70pPeEyoSM=
+github.com/hschain/hschain v0.6.3/go.mod h1:ibqsxRNceZF3qV7/cBbrn2QOxVpijIryDisxo2ETig0=
+github.com/hschain/hschain v0.6.4-0.20201224073625-bc792e700cdf h1:OKPmPb2LSh/QjZB1E3ybeTA8iJq+ihqk4VQ/xvOMhtk=
+github.com/hschain/hschain v0.6.4-0.20201224073625-bc792e700cdf/go.mod h1:ibqsxRNceZF3qV7/cBbrn2QOxVpijIryDisxo2ETig0=
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
 github.com/jessevdk/go-flags v0.0.0-20141203071132-1679536dcc89/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
 github.com/jinzhu/gorm v1.9.15 h1:OdR1qFvtXktlxk73XFYMiYn9ywzTwytqe4QkuMRqc38=
@@ -334,6 +338,7 @@ github.com/tendermint/btcd v0.1.1 h1:0VcxPfflS2zZ3RiOAHkBiFUcPvbtRj5O7zHmcJWHV7s
 github.com/tendermint/btcd v0.1.1/go.mod h1:DC6/m53jtQzr/NFmMNEu0rxf18/ktVoVtMrnDD5pN+U=
 github.com/tendermint/crypto v0.0.0-20180820045704-3764759f34a5 h1:u8i49c+BxloX3XQ55cvzFNXplizZP/q00i+IlttUjAU=
 github.com/tendermint/crypto v0.0.0-20180820045704-3764759f34a5/go.mod h1:z4YtwM70uOnk8h0pjJYlj3zdYwi9l03By6iAIF5j/Pk=
+github.com/tendermint/go-amino v0.14.1 h1:o2WudxNfdLNBwMyl2dqOJxiro5rfrEaU0Ugs6offJMk=
 github.com/tendermint/go-amino v0.14.1/go.mod h1:i/UKE5Uocn+argJJBb12qTZsCDBcAYMbR92AaJVmKso=
 github.com/tendermint/go-amino v0.15.1 h1:D2uk35eT4iTsvJd9jWIetzthE5C0/k2QmMFkCN+4JgQ=
 github.com/tendermint/go-amino v0.15.1/go.mod h1:TQU0M1i/ImAo+tYpZi73AU3V/dKeCoMC9Sphe2ZwGME=

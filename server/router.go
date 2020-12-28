@@ -1,6 +1,7 @@
 package server
 
 import (
+	"hscan/config"
 	"hscan/db"
 	"log"
 
@@ -23,9 +24,10 @@ type Server struct {
 	Priceinto     map[string]models.PriceInto
 	UsersNumber   int32
 	Held_by_users float64
+	Hschain       *config.HschainConfig
 }
 
-func NewServer(addr string, l *log.Logger, db *db.Database, cdc *codec.Codec, client *client.Client) *Server {
+func NewServer(addr string, l *log.Logger, db *db.Database, cdc *codec.Codec, client *client.Client, Hschain config.HschainConfig) *Server {
 	return &Server{
 		addr,
 		gin.Default(),
@@ -36,6 +38,7 @@ func NewServer(addr string, l *log.Logger, db *db.Database, cdc *codec.Codec, cl
 		make(map[string]models.PriceInto, 1),
 		0,
 		0,
+		&Hschain,
 	}
 }
 

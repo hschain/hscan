@@ -79,11 +79,11 @@ func main() {
 	db.Model(&schema.UserVersion{}).AddUniqueIndex("idx_version", "address", "app", "platform")
 	cdc := newCodec()
 
-	scanner := scanner.NewScanner(l, client, db, cdc)
+	scanner := scanner.NewScanner(l, client, db, cdc, cfg.Hschain)
 
 	scanner.Start()
 
-	server := server.NewServer(cfg.Web.Ip+":"+cfg.Web.Port, l, db, cdc, client)
+	server := server.NewServer(cfg.Web.Ip+":"+cfg.Web.Port, l, db, cdc, client, cfg.Hschain)
 
 	server.Start()
 

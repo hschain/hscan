@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"hscan/client"
+	"hscan/config"
 	"hscan/db"
 	"hscan/models"
 	"hscan/schema"
@@ -22,19 +23,21 @@ import (
 
 // Scanner wraps the required params to scan blockchain
 type Scanner struct {
-	l      *log.Logger
-	client *client.Client
-	db     *db.Database
-	cdc    *codec.Codec
+	l       *log.Logger
+	client  *client.Client
+	db      *db.Database
+	cdc     *codec.Codec
+	Hschain *config.HschainConfig
 }
 
 // NewScanner returns Scanner
-func NewScanner(l *log.Logger, client *client.Client, db *db.Database, cdc *codec.Codec) *Scanner {
+func NewScanner(l *log.Logger, client *client.Client, db *db.Database, cdc *codec.Codec, Hschain config.HschainConfig) *Scanner {
 	return &Scanner{
 		l,
 		client,
 		db,
 		cdc,
+		&Hschain,
 	}
 }
 
@@ -79,7 +82,7 @@ func (s *Scanner) sync() error {
 		dbHeight = 1
 	}
 
-	//dbHeight = 11240
+	//dbHeight = 998952
 
 	s.l.Printf("dbHeight is %v, latestBlockHeight is %v", dbHeight, latestBlockHeight)
 
@@ -91,6 +94,8 @@ func (s *Scanner) sync() error {
 			return err
 		}
 		s.l.Printf("synced block %d/%d \n", i, latestBlockHeight)
+
+		s.getAlassets(s.Hschain.DestroyAddress)
 	}
 
 	return nil
@@ -214,10 +219,6 @@ func (s *Scanner) getTxs(txs []*tmctypes.ResultTx, resBlock *tmctypes.ResultBloc
 			return nil, err
 		}
 
-		if len(resp.Events.Flatten()) < 2 {
-			return nil, nil
-		}
-
 		tempTransaction := &schema.Transaction{
 			Height:          resp.Height,
 			TxHash:          resp.TxHash,
@@ -235,24 +236,30 @@ func (s *Scanner) getTxs(txs []*tmctypes.ResultTx, resBlock *tmctypes.ResultBloc
 			RecipientNotice: 0,
 		}
 
-		if result[0]["success"] == true {
-			tempTransaction.Sender = resp.Events.Flatten()[0].Attributes[0].Value
-			tempTransaction.Recipient = resp.Events.Flatten()[1].Attributes[0].Value
-			Amount := strings.Split(resp.Events.Flatten()[1].Attributes[1].Value, "u")
-			if len(Amount) < 2 {
-				tempTransaction.Amount = resp.Events.Flatten()[1].Attributes[1].Value
-				tempTransaction.Denom = "unknow"
-			} else {
-				tempTransaction.Amount = Amount[0]
-				tempTransaction.Denom = "u" + Amount[1]
-			}
-			s.getAlassets(tempTransaction.Sender)
-			s.getAlassets(tempTransaction.Recipient)
-		}
-		var messages []schema.Message
-		json.Unmarshal([]byte(tempTransaction.RawMessages), &messages)
+		if len(resp.Events.Flatten()) >= 2 {
+			if result[0]["success"] == true {
+				tempTransaction.Sender = resp.Events.Flatten()[0].Attributes[0].Value
+				tempTransaction.Recipient = resp.Events.Flatten()[1].Attributes[0].Value
+				if len(resp.Events.Flatten()[1].Attributes) >= 2 {
+					Amount := strings.Split(resp.Events.Flatten()[1].Attributes[1].Value, "u")
+					if len(Amount) < 2 {
+						tempTransaction.Amount = resp.Events.Flatten()[1].Attributes[1].Value
+						tempTransaction.Denom = "unknow"
+					} else {
+						tempTransaction.Amount = Amount[0]
+						tempTransaction.Denom = "u" + Amount[1]
+					}
+					s.getAlassets(tempTransaction.Sender)
+					s.getAlassets(tempTransaction.Recipient)
+				}
 
-		tempTransaction.Messages = messages
+			}
+			var messages []schema.Message
+			json.Unmarshal([]byte(tempTransaction.RawMessages), &messages)
+
+			tempTransaction.Messages = messages
+		}
+
 		transactions = append(transactions, tempTransaction)
 	}
 

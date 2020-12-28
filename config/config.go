@@ -10,9 +10,10 @@ import (
 
 // Config wraps all config
 type Config struct {
-	Node  NodeConfig  `yaml:"node"`
-	Web   WebConfig   `yaml:"web"`
-	Mysql MysqlConfig `yaml:"mysql"`
+	Node    NodeConfig    `yaml:"node"`
+	Web     WebConfig     `yaml:"web"`
+	Mysql   MysqlConfig   `yaml:"mysql"`
+	Hschain HschainConfig `yaml:"hschain"`
 }
 
 // NodeConfig wraps all node endpoints that are used in this project
@@ -30,6 +31,11 @@ type WebConfig struct {
 
 type MysqlConfig struct {
 	MysqlRes string `yaml:"mysql_res"`
+}
+
+type HschainConfig struct {
+	DestroyAddress    string `yaml:"destroy"`
+	SupplementAddress string `yaml:"supplement"`
 }
 
 // ParseConfig attempts to read and parse config.yaml from the given path
@@ -85,6 +91,11 @@ func ParseConfig() *Config {
 
 	default:
 		log.Fatalf("active parameter in config.yaml cannot be set as '%s'", viper.GetString("active"))
+	}
+
+	cfg.Hschain = HschainConfig{
+		DestroyAddress:    viper.GetString("hschain.addrss.destroy"),
+		SupplementAddress: viper.GetString("hschain.addrss.supplement"),
 	}
 
 	return &cfg

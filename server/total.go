@@ -37,6 +37,7 @@ func sortCoins(Coins []map[string]interface{}) []map[string]interface{} {
 
 	if Coins[0]["denom"] != "uhst" {
 		hst := make([]map[string]interface{}, 1)
+		hst[0] = make(map[string]interface{}, 1)
 		hst[0]["amount"] = "0"
 		hst[0]["denom"] = "uhst"
 		Coins = append(hst, Coins...)
