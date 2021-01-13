@@ -8,12 +8,34 @@ import (
 	"time"
 )
 
+func (s *Server) GetDenom() {
+	for {
+		Account, err := s.getAccount(s.Hschain.DestroyAddress)
+		var Accountinfo models.Accountinfo
+		err = json.Unmarshal(Account.Body(), &Accountinfo)
+		if err != nil {
+			time.Sleep(time.Duration(5) * time.Minute)
+			continue
+		}
+
+		coins := Accountinfo.Result.Value.Coins
+
+		for i := 0; i < len(coins); i++ {
+			amount, _ := strconv.ParseInt(coins[i].Amount, 10, 64)
+			s.Destory[coins[i].Denom] = amount
+		}
+		time.Sleep(time.Duration(5) * time.Minute)
+
+	}
+}
+
 func (s *Server) updatePriceinto() {
 
 	for {
 		for k, v := range s.Priceinto {
 			Pirce, Priceunit, err := s.queryDenomPrice(k)
 			if err != nil {
+				time.Sleep(time.Duration(5) * time.Minute)
 				continue
 			}
 			v.Pirce = Pirce.(string)
@@ -23,12 +45,14 @@ func (s *Server) updatePriceinto() {
 		Number, err := s.client.QueryUsersNumber()
 		if err != nil {
 			s.l.Printf("query Users of Number failed")
+			time.Sleep(time.Duration(5) * time.Minute)
 			continue
 		}
 
 		var result map[string]interface{}
 		err = json.Unmarshal(Number.Body(), &result)
 		if err != nil {
+			time.Sleep(time.Duration(5) * time.Minute)
 			continue
 		}
 		UsersNumber := result["result"].(map[string]interface{})["users_num"].(float64)

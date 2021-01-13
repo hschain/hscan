@@ -235,13 +235,20 @@ func (s *Scanner) getTxs(txs []*tmctypes.ResultTx, resBlock *tmctypes.ResultBloc
 			SenderNotice:    0,
 			RecipientNotice: 0,
 		}
+		fmt.Println("Flatten len ", len(resp.Events.Flatten()))
 
 		if len(resp.Events.Flatten()) >= 2 {
 			if result[0]["success"] == true {
 				tempTransaction.Sender = resp.Events.Flatten()[0].Attributes[0].Value
 				tempTransaction.Recipient = resp.Events.Flatten()[1].Attributes[0].Value
+
+				fmt.Println("Attributes len ", len(resp.Events.Flatten()[1].Attributes))
+
 				if len(resp.Events.Flatten()[1].Attributes) >= 2 {
 					Amount := strings.Split(resp.Events.Flatten()[1].Attributes[1].Value, "u")
+
+					fmt.Println("Amount len ", len(Amount))
+
 					if len(Amount) < 2 {
 						tempTransaction.Amount = resp.Events.Flatten()[1].Attributes[1].Value
 						tempTransaction.Denom = "unknow"
@@ -259,7 +266,6 @@ func (s *Scanner) getTxs(txs []*tmctypes.ResultTx, resBlock *tmctypes.ResultBloc
 
 			tempTransaction.Messages = messages
 		}
-
 		transactions = append(transactions, tempTransaction)
 	}
 
@@ -281,15 +287,25 @@ func (s *Scanner) getAlassets(address string) error {
 	}
 
 	var Alassets []schema.PersonAlassets
-	for i := 0; i < len(result.Result.Value.Coins); i++ {
-		amount, _ := strconv.Atoi(result.Result.Value.Coins[i]["amount"].(string))
+	if len(result.Result.Value.Coins) == 0 {
 		alassets := schema.PersonAlassets{
 
 			Address: address,
-			Amount:  (int64)(amount),
-			Denom:   result.Result.Value.Coins[i]["denom"].(string),
+			Amount:  (int64)(0),
+			Denom:   "uhst",
 		}
 		Alassets = append(Alassets, alassets)
+	} else {
+		for i := 0; i < len(result.Result.Value.Coins); i++ {
+			amount, _ := strconv.Atoi(result.Result.Value.Coins[i]["amount"].(string))
+			alassets := schema.PersonAlassets{
+
+				Address: address,
+				Amount:  (int64)(amount),
+				Denom:   result.Result.Value.Coins[i]["denom"].(string),
+			}
+			Alassets = append(Alassets, alassets)
+		}
 	}
 
 	return s.db.InsertScannedAlassetsData(Alassets)
