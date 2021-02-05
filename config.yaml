@@ -14,14 +14,11 @@ mainnet:
 
 testnet:
   node:
-    lcd_server_endpoint: "http://172.16.0.64:1317"
-    node_server_endpoint: "http://172.16.0.64:26657"
+    # lcd_server_endpoint: "http://172.16.0.64:1317"
+    # node_server_endpoint: "http://172.16.0.64:26657"
     #node_server_endpoint: "http://51.75.145.123:26657"
-    # lcd_server_endpoint: "https://scan.hschain.io/api/v2"
-    # node_server_endpoint: "http://8.210.85.143:26657"
-    # pri_server_endpoint: "https://wallet.hschain.io"
-
-   
+    lcd_server_endpoint: "https://scan.hschain.io/api/v2"
+    node_server_endpoint: "http://8.210.85.143:26657"
     pri_server_endpoint: "https://wallet.hschain.io"
   web:
     port: 5002

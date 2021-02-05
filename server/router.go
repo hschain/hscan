@@ -15,17 +15,17 @@ import (
 )
 
 type Server struct {
-	addr          string
-	e             *gin.Engine
-	l             *log.Logger
-	db            *db.Database
-	cdc           *codec.Codec
-	client        *client.Client
-	Priceinto     map[string]models.PriceInto
-	UsersNumber   int32
-	Held_by_users float64
-	Hschain       *config.HschainConfig
-	Destory       map[string]int64
+	addr        string
+	e           *gin.Engine
+	l           *log.Logger
+	db          *db.Database
+	cdc         *codec.Codec
+	client      *client.Client
+	Priceinto   map[string]models.PriceInto
+	UsersNumber int32
+	HeldByUsers float64
+	Hschain     *config.HschainConfig
+	Destory     map[string]int64
 }
 
 func NewServer(addr string, l *log.Logger, db *db.Database, cdc *codec.Codec, client *client.Client, Hschain config.HschainConfig) *Server {

@@ -11,6 +11,7 @@ import (
 func (s *Server) blocks(c *gin.Context) {
 
 	height, _ := strconv.ParseInt(c.DefaultQuery("begin", "0"), 10, 64)
+	page, _ := strconv.ParseInt(c.DefaultQuery("page", "1"), 10, 64)
 	limit := c.DefaultQuery("limit", "5")
 	iLimit, _ := strconv.ParseInt(limit, 10, 64)
 	if iLimit <= 0 {
@@ -28,9 +29,14 @@ func (s *Server) blocks(c *gin.Context) {
 
 	var blocks []*schema.Block
 
-	if err := s.db.Order("height DESC").Where(" height <= ?", height).Limit(iLimit).Find(&blocks).Error; err != nil {
+	// if err := s.db.Order("height DESC").Offset((page - 1) * iLimit).Limit(iLimit).Find(&blocks).Error; err != nil {
+	// 	s.l.Printf("query blocks from db failed")
+	// }
+
+	if err := s.db.Order("height DESC").Where("height <= ?", height-(page-1)*iLimit).Limit(iLimit).Find(&blocks).Error; err != nil {
 		s.l.Printf("query blocks from db failed")
 	}
+
 	s.blockResponse(c, total, blocks)
 }
 

@@ -104,7 +104,8 @@ func (s *Server) format(txs []*schema.Transaction) {
 }
 
 func (s *Server) txs(c *gin.Context) {
-	height, _ := strconv.ParseInt(c.DefaultQuery("begin", "0"), 10, 64)
+	page, _ := strconv.ParseInt(c.DefaultQuery("page", "1"), 10, 64)
+	height, _ := strconv.ParseInt(c.DefaultQuery("height", "0"), 10, 64)
 	limit := c.DefaultQuery("limit", "5")
 	timetable := c.DefaultQuery("timetable", "null")
 	address := c.DefaultQuery("address", "null")
@@ -114,7 +115,7 @@ func (s *Server) txs(c *gin.Context) {
 		iLimit = 5
 	}
 
-	total, err := s.db.QueryTxBlockCount()
+	total, err := s.db.QueryTxBlockCount(s.Hschain.SupplementAddress)
 	if total == -1 {
 		s.l.Print(errors.Wrap(err, "failed to query the latest block height on the active network"))
 	}
@@ -124,12 +125,12 @@ func (s *Server) txs(c *gin.Context) {
 	}
 	var txs []*schema.Transaction
 	if address == "null" {
-		if err := s.db.Order("height DESC").Where(" id <= ? and (Sender <> ? and Recipient <> ?)", height, s.Hschain.SupplementAddress, s.Hschain.SupplementAddress).Limit(iLimit).Find(&txs).Error; err != nil {
+		if err := s.db.Order("height DESC").Offset((page-1)*iLimit).Where("(Sender <> ? and Recipient <> ?)", s.Hschain.SupplementAddress, s.Hschain.SupplementAddress).Limit(iLimit).Find(&txs).Error; err != nil {
 			s.l.Printf("query blocks from db failed")
 		}
 	} else {
 		if timetable == "null" {
-			if err := s.db.Order("height DESC").Where(" id <= ? and (Sender = ? or Recipient = ?) and (Sender <> ? and Recipient <> ?)", height, address, address, s.Hschain.SupplementAddress, s.Hschain.SupplementAddress).Limit(iLimit).Find(&txs).Error; err != nil {
+			if err := s.db.Order("height DESC").Offset((page-1)*iLimit).Where("(Sender = ? or Recipient = ?) and (Sender <> ? and Recipient <> ?)", address, address, s.Hschain.SupplementAddress, s.Hschain.SupplementAddress).Limit(iLimit).Find(&txs).Error; err != nil {
 				s.l.Printf("query blocks from db failed")
 			}
 		}
@@ -171,7 +172,7 @@ func (s *Server) tx(c *gin.Context) {
 	s.format(txs)
 	Ravl := s.formatRavlTransaction(txs)
 
-	total, err := s.db.QueryTxBlockCount()
+	total, err := s.db.QueryTxBlockCount(s.Hschain.SupplementAddress)
 	if total == -1 {
 		s.l.Print(errors.Wrap(err, "failed to query the latest block height on the active network"))
 	}

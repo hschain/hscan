@@ -130,3 +130,8 @@ func (c *Client) QueryUsersNumber() (*resty.Response, error) {
 
 	return c.RestyGet(c.cfg.PriServerEndpoint+"/h5/hsc_users_num", "")
 }
+
+func (c *Client) QueryHscInfo() (*resty.Response, error) {
+
+	return c.RestyGet(c.cfg.PriServerEndpoint+"/h5/hscinfo", "")
+}

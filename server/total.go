@@ -66,7 +66,7 @@ func (s *Server) totals(c *gin.Context) {
 	result.Result, _ = s.CoinsPrice(result.Result)
 	for i := 0; i < len(result.Result); i++ {
 		if result.Result[i]["denom"].(string) == "uhst" {
-			result.Result[i]["minted_supply"] = (int64)(s.Held_by_users * 1000000)
+			result.Result[i]["minted_supply"] = (int64)(s.HeldByUsers * 1000000)
 		} else {
 			amount := result.Result[i]["amount"].(string)
 			denom := result.Result[i]["denom"].(string)

@@ -72,9 +72,9 @@ func (s *Server) frame(c *gin.Context) {
 	}
 	var result map[string]interface{}
 	err = json.Unmarshal(status.Body(), &result)
-	current_day_provisions := result["result"].(map[string]interface{})["status"].(map[string]interface{})["current_day_provisions"].(string)
-	Int_current_day_provisions, _ := strconv.ParseFloat(current_day_provisions, 64)
-	Int_total_circulation_supply := s.Held_by_users
+	currentDayProvisions := result["result"].(map[string]interface{})["status"].(map[string]interface{})["current_day_provisions"].(string)
+	intCurrentDayProvisions, _ := strconv.ParseFloat(currentDayProvisions, 64)
+	intTotalCirculationSupply := s.HeldByUsers
 
 	var blocks []*schema.Block
 	if err := s.db.Order("height DESC").Limit(1).Find(&blocks).Error; err != nil {
@@ -85,8 +85,8 @@ func (s *Server) frame(c *gin.Context) {
 	frame := models.Frame{
 		Tps:                    (int32)(tps),
 		UsersNumber:            s.UsersNumber,
-		CurrentDayProvisions:   Int_current_day_provisions / 1000000,
-		TotalCirculationSupply: (int64)(Int_total_circulation_supply),
+		CurrentDayProvisions:   intCurrentDayProvisions / 1000000,
+		TotalCirculationSupply: (int64)(intTotalCirculationSupply),
 	}
 	fmt.Println(frame)
 	s.interfaceResponse(c, frame)

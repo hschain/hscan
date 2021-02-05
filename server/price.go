@@ -2,23 +2,56 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"hscan/models"
 	"strconv"
 	"strings"
 	"time"
 )
 
-func (s *Server) GetDenom() {
+func (s *Server) SynchronismWallet() {
 	for {
-		Account, err := s.getAccount(s.Hschain.DestroyAddress)
-		var Accountinfo models.Accountinfo
-		err = json.Unmarshal(Account.Body(), &Accountinfo)
+		result, err := s.client.QueryHscInfo()
+		if err != nil {
+			s.l.Printf("query Users of Number failed")
+			time.Sleep(time.Duration(5) * time.Minute)
+			continue
+		}
+
+		hscinfo := models.WalletHscInfo{}
+		err = json.Unmarshal(result.Body(), &hscinfo)
 		if err != nil {
 			time.Sleep(time.Duration(5) * time.Minute)
 			continue
 		}
 
-		coins := Accountinfo.Result.Value.Coins
+		if hscinfo.Code == 200 {
+
+		}
+
+		time.Sleep(time.Duration(5) * time.Minute)
+	}
+}
+
+func (s *Server) GetDenom() {
+	for {
+		account, err := s.getAccount(s.Hschain.DestroyAddress)
+
+		if err != nil {
+			time.Sleep(time.Duration(5) * time.Minute)
+			continue
+		}
+
+		fmt.Println(s.Hschain.DestroyAddress)
+		accountinfo := models.Accountinfo{}
+		fmt.Println(string(account.Body()))
+		err = json.Unmarshal(account.Body(), &accountinfo)
+		if err != nil {
+			time.Sleep(time.Duration(5) * time.Minute)
+			continue
+		}
+
+		coins := accountinfo.Result.Value.Coins
 
 		for i := 0; i < len(coins); i++ {
 			amount, _ := strconv.ParseInt(coins[i].Amount, 10, 64)
@@ -33,32 +66,34 @@ func (s *Server) updatePriceinto() {
 
 	for {
 		for k, v := range s.Priceinto {
-			Pirce, Priceunit, err := s.queryDenomPrice(k)
+			pirce, priceunit, err := s.queryDenomPrice(k)
 			if err != nil {
 				time.Sleep(time.Duration(5) * time.Minute)
 				continue
 			}
-			v.Pirce = Pirce.(string)
-			v.Priceunit = Priceunit.(string)
+			v.Pirce = pirce.(string)
+			v.Priceunit = priceunit.(string)
 		}
 
-		Number, err := s.client.QueryUsersNumber()
+		number, err := s.client.QueryUsersNumber()
 		if err != nil {
 			s.l.Printf("query Users of Number failed")
 			time.Sleep(time.Duration(5) * time.Minute)
 			continue
 		}
 
-		var result map[string]interface{}
-		err = json.Unmarshal(Number.Body(), &result)
+		result := models.UsersNumber{}
+		err = json.Unmarshal(number.Body(), &result)
 		if err != nil {
 			time.Sleep(time.Duration(5) * time.Minute)
 			continue
 		}
-		UsersNumber := result["result"].(map[string]interface{})["users_num"].(float64)
-		held_by_users := result["result"].(map[string]interface{})["held_by_users"].(string)
-		s.UsersNumber = (int32)(UsersNumber)
-		s.Held_by_users, _ = strconv.ParseFloat(held_by_users, 64)
+
+		if result.Code == 200 {
+			s.UsersNumber = (int32)(result.Result.UsersNum)
+			s.HeldByUsers, _ = strconv.ParseFloat(result.Result.HeldByUsers, 64)
+		}
+
 		time.Sleep(time.Duration(5) * time.Minute)
 	}
 }
@@ -73,11 +108,15 @@ func (s *Server) queryDenomPrice(denom interface{}) (interface{}, interface{}, e
 			return "0.00000", nil, err
 		}
 
-		pri, err := s.parseResponse(status)
+		result := models.HstExchangeRate{}
+		err = json.Unmarshal(status.Body(), &result)
 		if err != nil {
 			return "0.00000", nil, err
 		}
-		num := pri["result"].(map[string]interface{})["hst_pri"]
+		if result.Code != 200 {
+			return "0.00000", nil, fmt.Errorf("server get date error")
+		}
+		num := result.Result.HstPri
 		return num, "/" + nom, nil
 	} else {
 		return "0.00000", "/" + nom, nil
@@ -107,14 +146,14 @@ func (s *Server) denomPrice(denoms map[string]interface{}, denom string) (map[st
 	return denoms, nil
 }
 
-func (s *Server) CoinsPrice(Coins []map[string]interface{}) ([]map[string]interface{}, error) {
+func (s *Server) CoinsPrice(coins []map[string]interface{}) ([]map[string]interface{}, error) {
 
-	Coins = sortCoins(Coins)
+	coins = sortCoins(coins)
 	var err error = nil
-	for j := 0; j < len(Coins); j++ {
-		denom := Coins[j]["denom"]
-		Coins[j], err = s.denomPrice(Coins[j], denom.(string))
+	for j := 0; j < len(coins); j++ {
+		denom := coins[j]["denom"]
+		coins[j], err = s.denomPrice(coins[j], denom.(string))
 
 	}
-	return Coins, err
+	return coins, err
 }

@@ -29,10 +29,10 @@ func (db *Database) QueryLatestBlockHeight() (int64, error) {
 	return block.Height, nil
 }
 
-func (db *Database) QueryTxBlockCount() (int64, error) {
+func (db *Database) QueryTxBlockCount(SupplementAddress string) (int64, error) {
 	var count int64
 
-	if err := db.Model(&schema.Transaction{}).Count(&count).Error; err != nil {
+	if err := db.Model(&schema.Transaction{}).Where("(Sender <> ? and Recipient <> ?)", SupplementAddress, SupplementAddress).Count(&count).Error; err != nil {
 		if IsRecordNotFoundError(err) {
 			return 0, nil
 		}

@@ -82,8 +82,6 @@ func (s *Scanner) sync() error {
 		dbHeight = 1
 	}
 
-	//dbHeight = 998952
-
 	s.l.Printf("dbHeight is %v, latestBlockHeight is %v", dbHeight, latestBlockHeight)
 
 	// Ingest all blocks up to the latest height
@@ -195,13 +193,14 @@ func (s *Scanner) getTxs(txs []*tmctypes.ResultTx, resBlock *tmctypes.ResultBloc
 	for i := range txs {
 		var stdTx types.StdTx
 
+		s.l.Printf("txs[i].Tx is %+v", txs[i].Tx)
 		err := s.cdc.UnmarshalBinaryLengthPrefixed(txs[i].Tx, &stdTx)
 		if err != nil {
 			s.l.Print(errors.Wrap(err, "failed to Unmarshal Binary Length Prefixed"))
 			return nil, nil
 		}
 
-		//	s.l.Printf("stdTx is %+v", stdTx)
+		s.l.Printf("stdTx is %+v", stdTx)
 
 		resp := sdk.NewResponseResultTx(txs[i], stdTx, resBlock.Block.Time.Format(time.RFC3339))
 
@@ -211,12 +210,17 @@ func (s *Scanner) getTxs(txs []*tmctypes.ResultTx, resBlock *tmctypes.ResultBloc
 			return nil, nil
 		}
 
+		s.l.Printf("msgsBz is %+v", msgsBz)
 		var result []map[string]interface{}
 		err = json.Unmarshal(msgsBz, &result)
-
+		s.l.Printf("result is %+v", result)
 		if err != nil {
 			s.l.Print(errors.Wrap(err, "failed to tx log  Unmarshal"))
 			return nil, err
+		}
+
+		if len(result) == 0 {
+			continue
 		}
 
 		tempTransaction := &schema.Transaction{
@@ -308,5 +312,8 @@ func (s *Scanner) getAlassets(address string) error {
 		}
 	}
 
+	if err := s.db.Exec("UPDATE person_alassets SET amount = 0 WHERE address = ?", address).Error; err != nil {
+		return err
+	}
 	return s.db.InsertScannedAlassetsData(Alassets)
 }
