@@ -24,6 +24,7 @@ type Server struct {
 	Priceinto   map[string]models.PriceInto
 	UsersNumber int32
 	HeldByUsers float64
+	HeldByHsc   float64
 	Hschain     *config.HschainConfig
 	Destory     map[string]int64
 }
@@ -37,6 +38,7 @@ func NewServer(addr string, l *log.Logger, db *db.Database, cdc *codec.Codec, cl
 		cdc,
 		client,
 		make(map[string]models.PriceInto, 1),
+		0,
 		0,
 		0,
 		&Hschain,

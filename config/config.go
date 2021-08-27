@@ -36,6 +36,7 @@ type MysqlConfig struct {
 type HschainConfig struct {
 	DestroyAddress    string `yaml:"destroy"`
 	SupplementAddress string `yaml:"supplement"`
+	LockAddress       string `yaml:"lockaddress"`
 }
 
 // ParseConfig attempts to read and parse config.yaml from the given path
@@ -96,6 +97,7 @@ func ParseConfig() *Config {
 	cfg.Hschain = HschainConfig{
 		DestroyAddress:    viper.GetString("hschain.addrss.destroy"),
 		SupplementAddress: viper.GetString("hschain.addrss.supplement"),
+		LockAddress:       viper.GetString("hschain.addrss.lockaddress"),
 	}
 
 	return &cfg

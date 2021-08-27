@@ -94,6 +94,25 @@ func (s *Server) updatePriceinto() {
 			s.HeldByUsers, _ = strconv.ParseFloat(result.Result.HeldByUsers, 64)
 		}
 
+		account, err := s.getAccount(s.Hschain.LockAddress)
+		if err != nil {
+			time.Sleep(time.Duration(5) * time.Minute)
+			continue
+		}
+		accountinfo := models.Accountinfo{}
+		err = json.Unmarshal(account.Body(), &accountinfo)
+		if err != nil {
+			time.Sleep(time.Duration(5) * time.Minute)
+			continue
+		}
+		coins := accountinfo.Result.Value.Coins
+		for i := 0; i < len(coins); i++ {
+			if coins[i].Denom == "uhsc" || coins[i].Denom == "hsc" {
+				amount, _ := strconv.ParseFloat(coins[i].Amount, 64)
+				s.HeldByHsc = amount
+			}
+		}
+
 		time.Sleep(time.Duration(5) * time.Minute)
 	}
 }
@@ -118,6 +137,9 @@ func (s *Server) queryDenomPrice(denom interface{}) (interface{}, interface{}, e
 		}
 		num := result.Result.HstPri
 		return num, "/" + nom, nil
+	} else if denom == "hsc" || denom == "uhsc" {
+		return "0.1706", "/" + nom, nil
+		//return "0.00000", "/" + nom, nil
 	} else {
 		return "0.00000", "/" + nom, nil
 	}

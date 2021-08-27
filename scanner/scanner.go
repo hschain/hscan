@@ -215,7 +215,7 @@ func (s *Scanner) getTxs(txs []*tmctypes.ResultTx, resBlock *tmctypes.ResultBloc
 		err = json.Unmarshal(msgsBz, &result)
 		s.l.Printf("result is %+v", result)
 		if err != nil {
-			s.l.Print(errors.Wrap(err, "failed to tx log  Unmarshal"))
+			s.l.Print(errors.Wrap(err, "failed to tx log  Unmarshgo bual"))
 			return nil, err
 		}
 
