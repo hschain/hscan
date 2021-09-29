@@ -107,7 +107,7 @@ func (db *Database) InsertUserVersion(infos schema.UserVersion) error {
 		return nil
 	}
 
-	if err := db.Model(&schema.VersionControl{}).Where("address = ? and app = ? and platform = ?", infos.Address, infos.App, infos.Platform).Updates(
+	if err := db.Model(&schema.UserVersion{}).Where("address = ? and app = ? and platform = ?", infos.Address, infos.App, infos.Platform).Updates(
 		map[string]interface{}{
 			"version":   infos.Version,
 			"timestamp": time.Now(),

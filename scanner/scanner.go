@@ -13,6 +13,7 @@ import (
 	"hscan/db"
 	"hscan/models"
 	"hscan/schema"
+	"hscan/server"
 
 	"github.com/hschain/hschain/codec"
 	sdk "github.com/hschain/hschain/types"
@@ -28,16 +29,18 @@ type Scanner struct {
 	db      *db.Database
 	cdc     *codec.Codec
 	Hschain *config.HschainConfig
+	cache   *server.Cache
 }
 
 // NewScanner returns Scanner
-func NewScanner(l *log.Logger, client *client.Client, db *db.Database, cdc *codec.Codec, Hschain config.HschainConfig) *Scanner {
+func NewScanner(l *log.Logger, client *client.Client, db *db.Database, cdc *codec.Codec, Hschain config.HschainConfig, cache *server.Cache) *Scanner {
 	return &Scanner{
 		l,
 		client,
 		db,
 		cdc,
 		&Hschain,
+		cache,
 	}
 }
 
@@ -139,6 +142,17 @@ func (s *Scanner) process(height int64) error {
 		return fmt.Errorf("failed to insert scanned data: %s", err)
 	}
 
+	//TODO opt
+	//add to cache
+	for i := range transactions {
+		var tx schema.Transaction
+		if err := s.db.Where("tx_hash = ?", transactions[i].TxHash).First(&tx).Error; err == nil {
+			if tx.Sender != s.Hschain.SupplementAddress && tx.Recipient != s.Hschain.SupplementAddress {
+				s.cache.Add(uint32(tx.ID), tx.Sender, tx.Recipient, tx.Denom)
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -150,7 +164,7 @@ func (s *Scanner) getBonus(Height int64) (string, string, error) {
 	err := json.Unmarshal(response.Body(), &result)
 
 	if err != nil {
-		fmt.Errorf("failed to getBonus scanned data: %s", err)
+		s.l.Printf("failed to getBonus scanned data: %s", err)
 		return "", "", err
 	}
 	denom := result["result"].(map[string]interface{})["denom"].(string)
