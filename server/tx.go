@@ -11,7 +11,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	sdk "github.com/hschain/hschain/types"
-	"github.com/pkg/errors"
 )
 
 func (s *Server) txresponse(c *gin.Context, total int64, txs []*schema.RavlTransaction) {
@@ -167,89 +166,102 @@ func (s *Server) txs(c *gin.Context) {
 		iLimit = 5
 	}
 
-	var total int64
-	var err error
+	var total = int64(s.cache.GetTotal(address, denom, int(txType)))
 	var txs []*schema.Transaction
-	if address == "null" {
-		total, err = s.db.QueryTxBlockCount(s.Hschain.SupplementAddress)
-		if total == -1 {
-			s.l.Print(errors.Wrap(err, "failed to query the latest block height on the active network"))
-		}
-		if err := s.db.Order("id DESC").Offset((page-1)*iLimit).Where("(Sender <> ? and Recipient <> ?)", s.Hschain.SupplementAddress, s.Hschain.SupplementAddress).Limit(iLimit).Find(&txs).Error; err != nil {
-			s.l.Printf("query blocks from db failed")
-		}
-	} else {
 
-		if txType == 0 {
-			txs, err = s.gettxs(address, denom, page, iLimit)
-			if err != nil {
+	ids := s.cache.GetTxids(address, denom, int(txType), page, iLimit)
+	for i := len(ids) - 1; i >= 0; i-- {
+		var tx schema.Transaction
+		if err := s.db.Where("id = ?", ids[i]).First(&tx).Error; err == nil {
+			txs = append([]*schema.Transaction{&tx}, txs...)
+		}
+	}
+	/*
+		if address == "null" {
+
+			total, err = s.db.QueryTxBlockCount(s.Hschain.SupplementAddress)
+			if total == -1 {
+				s.l.Print(errors.Wrap(err, "failed to query the latest block height on the active network"))
+			}
+			if err := s.db.Order("id DESC").Offset((page-1)*iLimit).Where("(Sender <> ? and Recipient <> ?)", s.Hschain.SupplementAddress, s.Hschain.SupplementAddress).Limit(iLimit).Find(&txs).Error; err != nil {
 				s.l.Printf("query blocks from db failed")
 			}
-		} else if txType == 1 {
-			if denom == "null" {
-				if err := s.db.Order("id DESC").Offset((page-1)*iLimit).Where("(Sender = ? ) and (Sender <> ? and Recipient <> ?)", address, s.Hschain.SupplementAddress, s.Hschain.SupplementAddress).Limit(iLimit).Find(&txs).Error; err != nil {
+
+		} else {
+
+			if txType == 0 {
+				txs, err = s.gettxs(address, denom, page, iLimit)
+				if err != nil {
 					s.l.Printf("query blocks from db failed")
 				}
+			} else if txType == 1 {
+				if denom == "null" {
+					if err := s.db.Order("id DESC").Offset((page-1)*iLimit).Where("(Sender = ? ) and (Sender <> ? and Recipient <> ?)", address, s.Hschain.SupplementAddress, s.Hschain.SupplementAddress).Limit(iLimit).Find(&txs).Error; err != nil {
+						s.l.Printf("query blocks from db failed")
+					}
 
-			} else {
-				if err := s.db.Order("id DESC").Offset((page-1)*iLimit).Where("(Sender = ?) and (Sender <> ? and Recipient <> ?) and denom = ?", address, s.Hschain.SupplementAddress, s.Hschain.SupplementAddress, denom).Limit(iLimit).Find(&txs).Error; err != nil {
-					s.l.Printf("query blocks from db failed")
+				} else {
+					if err := s.db.Order("id DESC").Offset((page-1)*iLimit).Where("(Sender = ?) and (Sender <> ? and Recipient <> ?) and denom = ?", address, s.Hschain.SupplementAddress, s.Hschain.SupplementAddress, denom).Limit(iLimit).Find(&txs).Error; err != nil {
+						s.l.Printf("query blocks from db failed")
+					}
+				}
+			} else if txType == 2 {
+				if denom == "null" {
+					if err := s.db.Order("id DESC").Offset((page-1)*iLimit).Where("(Recipient = ? ) and (Sender <> ? and Recipient <> ?)", address, s.Hschain.SupplementAddress, s.Hschain.SupplementAddress).Limit(iLimit).Find(&txs).Error; err != nil {
+						s.l.Printf("query blocks from db failed")
+					}
+
+				} else {
+					if err := s.db.Order("id DESC").Offset((page-1)*iLimit).Where("(Recipient = ?) and (Sender <> ? and Recipient <> ?) and denom = ?", address, s.Hschain.SupplementAddress, s.Hschain.SupplementAddress, denom).Limit(iLimit).Find(&txs).Error; err != nil {
+						s.l.Printf("query blocks from db failed")
+					}
 				}
 			}
-		} else if txType == 2 {
-			if denom == "null" {
-				if err := s.db.Order("id DESC").Offset((page-1)*iLimit).Where("(Recipient = ? ) and (Sender <> ? and Recipient <> ?)", address, s.Hschain.SupplementAddress, s.Hschain.SupplementAddress).Limit(iLimit).Find(&txs).Error; err != nil {
-					s.l.Printf("query blocks from db failed")
+			// if denom == "null" {
+			// 	if err := s.db.Order("id DESC").Offset((page-1)*iLimit).Where("(Sender = ? or Recipient = ?) and (Sender <> ? and Recipient <> ?)", address, address, s.Hschain.SupplementAddress, s.Hschain.SupplementAddress).Limit(iLimit).Find(&txs).Error; err != nil {
+			// 		s.l.Printf("query blocks from db failed")
+			// 	}
+			// } else {
+			// 	if err := s.db.Order("id DESC").Offset((page-1)*iLimit).Where("(Sender = ? or Recipient = ?) and (Sender <> ? and Recipient <> ?) and denom = ?", address, address, s.Hschain.SupplementAddress, s.Hschain.SupplementAddress, denom).Limit(iLimit).Find(&txs).Error; err != nil {
+			// 		s.l.Printf("query blocks from db failed")
+			// 	}
+			// }
+
+			// if timetable == "null" {
+			// 	if denom == "null" {
+			// 		if err := s.db.Order("id DESC").Offset((page-1)*iLimit).Where("(Sender = ? or Recipient = ?) and (Sender <> ? and Recipient <> ?)", address, address, s.Hschain.SupplementAddress, s.Hschain.SupplementAddress).Limit(iLimit).Find(&txs).Error; err != nil {
+			// 			s.l.Printf("query blocks from db failed")
+			// 		}
+			// 	} else {
+			// 		if err := s.db.Order("id DESC").Offset((page-1)*iLimit).Where("(Sender = ? or Recipient = ?) and (Sender <> ? and Recipient <> ?) and denom = ?", address, address, s.Hschain.SupplementAddress, s.Hschain.SupplementAddress, denom).Limit(iLimit).Find(&txs).Error; err != nil {
+			// 			s.l.Printf("query blocks from db failed")
+			// 		}
+			// 	}
+			// }
+			// if timetable == "history" {
+			// 	if err := s.db.Order("id DESC").Offset((page-1)*iLimit).Where("(Sender = ? or Recipient = ?) and (Sender <> ? and Recipient <> ?) and denom = ?", address, address, s.Hschain.SupplementAddress, s.Hschain.SupplementAddress, denom).Limit(iLimit).Find(&txs).Error; err != nil {
+			// 		s.l.Printf("query blocks from db failed")
+			// 	}
+			// 	s.db.Model(&schema.Transaction{}).Offset((page-1)*iLimit).Where("(Sender = ? and sender_notice = 0) and denom = ?", address, address, denom).Update("sender_notice", 1)
+			// 	s.db.Model(&schema.Transaction{}).Offset((page-1)*iLimit).Where("(Recipient = ? and RecipientNotice = 0) and denom = ?", address, address, denom).Update("RecipientNotice", 1)
+			// }
+			// if timetable == "now" {
+			// 	if err := s.db.Order("id DESC").Offset((page-1)*iLimit).Where("((Sender = ? and sender_notice = 0) or (Recipient = ? and RecipientNotice = 0)) and (Sender <> ? and Recipient <> ?)  and denom = ?", address, address, s.Hschain.SupplementAddress, s.Hschain.SupplementAddress, denom).Limit(iLimit).Find(&txs).Error; err != nil {
+			// 		s.l.Printf("query blocks from db failed")
+			// 	}
+			// 	s.db.Model(&schema.Transaction{}).Offset((page-1)*iLimit).Where("and (Sender = ? and sender_notice = 0) and denom = ?", address, address, denom).Update("sender_notice", 1)
+			// 	s.db.Model(&schema.Transaction{}).Offset((page-1)*iLimit).Where("(Recipient = ? and RecipientNotice = 0) and denom = ?", address, address, denom).Update("RecipientNotice", 1)
+			// }
+
+			/*
+				Acount, err := s.db.QueryAddressTxAcount(address)
+				if Acount == -1 {
+					s.l.Print(errors.Wrap(err, "failed to query the latest block height on the active network"))
 				}
+				total = Acount
 
-			} else {
-				if err := s.db.Order("id DESC").Offset((page-1)*iLimit).Where("(Recipient = ?) and (Sender <> ? and Recipient <> ?) and denom = ?", address, s.Hschain.SupplementAddress, s.Hschain.SupplementAddress, denom).Limit(iLimit).Find(&txs).Error; err != nil {
-					s.l.Printf("query blocks from db failed")
-				}
-			}
 		}
-		// if denom == "null" {
-		// 	if err := s.db.Order("id DESC").Offset((page-1)*iLimit).Where("(Sender = ? or Recipient = ?) and (Sender <> ? and Recipient <> ?)", address, address, s.Hschain.SupplementAddress, s.Hschain.SupplementAddress).Limit(iLimit).Find(&txs).Error; err != nil {
-		// 		s.l.Printf("query blocks from db failed")
-		// 	}
-		// } else {
-		// 	if err := s.db.Order("id DESC").Offset((page-1)*iLimit).Where("(Sender = ? or Recipient = ?) and (Sender <> ? and Recipient <> ?) and denom = ?", address, address, s.Hschain.SupplementAddress, s.Hschain.SupplementAddress, denom).Limit(iLimit).Find(&txs).Error; err != nil {
-		// 		s.l.Printf("query blocks from db failed")
-		// 	}
-		// }
-
-		// if timetable == "null" {
-		// 	if denom == "null" {
-		// 		if err := s.db.Order("id DESC").Offset((page-1)*iLimit).Where("(Sender = ? or Recipient = ?) and (Sender <> ? and Recipient <> ?)", address, address, s.Hschain.SupplementAddress, s.Hschain.SupplementAddress).Limit(iLimit).Find(&txs).Error; err != nil {
-		// 			s.l.Printf("query blocks from db failed")
-		// 		}
-		// 	} else {
-		// 		if err := s.db.Order("id DESC").Offset((page-1)*iLimit).Where("(Sender = ? or Recipient = ?) and (Sender <> ? and Recipient <> ?) and denom = ?", address, address, s.Hschain.SupplementAddress, s.Hschain.SupplementAddress, denom).Limit(iLimit).Find(&txs).Error; err != nil {
-		// 			s.l.Printf("query blocks from db failed")
-		// 		}
-		// 	}
-		// }
-		// if timetable == "history" {
-		// 	if err := s.db.Order("id DESC").Offset((page-1)*iLimit).Where("(Sender = ? or Recipient = ?) and (Sender <> ? and Recipient <> ?) and denom = ?", address, address, s.Hschain.SupplementAddress, s.Hschain.SupplementAddress, denom).Limit(iLimit).Find(&txs).Error; err != nil {
-		// 		s.l.Printf("query blocks from db failed")
-		// 	}
-		// 	s.db.Model(&schema.Transaction{}).Offset((page-1)*iLimit).Where("(Sender = ? and sender_notice = 0) and denom = ?", address, address, denom).Update("sender_notice", 1)
-		// 	s.db.Model(&schema.Transaction{}).Offset((page-1)*iLimit).Where("(Recipient = ? and RecipientNotice = 0) and denom = ?", address, address, denom).Update("RecipientNotice", 1)
-		// }
-		// if timetable == "now" {
-		// 	if err := s.db.Order("id DESC").Offset((page-1)*iLimit).Where("((Sender = ? and sender_notice = 0) or (Recipient = ? and RecipientNotice = 0)) and (Sender <> ? and Recipient <> ?)  and denom = ?", address, address, s.Hschain.SupplementAddress, s.Hschain.SupplementAddress, denom).Limit(iLimit).Find(&txs).Error; err != nil {
-		// 		s.l.Printf("query blocks from db failed")
-		// 	}
-		// 	s.db.Model(&schema.Transaction{}).Offset((page-1)*iLimit).Where("and (Sender = ? and sender_notice = 0) and denom = ?", address, address, denom).Update("sender_notice", 1)
-		// 	s.db.Model(&schema.Transaction{}).Offset((page-1)*iLimit).Where("(Recipient = ? and RecipientNotice = 0) and denom = ?", address, address, denom).Update("RecipientNotice", 1)
-		// }
-
-		Acount, err := s.db.QueryAddressTxAcount(address)
-		if Acount == -1 {
-			s.l.Print(errors.Wrap(err, "failed to query the latest block height on the active network"))
-		}
-		total = Acount
-	}
+	*/
 
 	s.format(txs)
 	Ravl := s.formatRavlTransaction(txs)
@@ -267,10 +279,9 @@ func (s *Server) tx(c *gin.Context) {
 	s.format(txs)
 	Ravl := s.formatRavlTransaction(txs)
 
-	total, err := s.db.QueryTxBlockCount(s.Hschain.SupplementAddress)
-	if total == -1 {
-		s.l.Print(errors.Wrap(err, "failed to query the latest block height on the active network"))
-	}
+	//total, err := s.db.QueryTxBlockCount(s.Hschain.SupplementAddress)
+	total := int64(s.cache.GetTotal("null", "null", 0))
+
 	s.txresponse(c, total, Ravl)
 }
 
