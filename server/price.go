@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"hscan/models"
+	"io/ioutil"
 	"strconv"
 	"strings"
 	"time"
@@ -138,7 +139,12 @@ func (s *Server) queryDenomPrice(denom interface{}) (interface{}, interface{}, e
 		num := result.Result.HstPri
 		return num, "/" + nom, nil
 	} else if denom == "hsc" || denom == "uhsc" {
-		return "0.1706", "/" + nom, nil
+		hscPrice, err := ioutil.ReadFile("./HSC_PRICE")
+		if err != nil {
+			return "0.1706", "/" + nom, nil
+		} else {
+			return string(hscPrice), "/" + nom, nil
+		}
 		//return "0.00000", "/" + nom, nil
 	} else {
 		return "0.00000", "/" + nom, nil
@@ -148,7 +154,7 @@ func (s *Server) queryDenomPrice(denom interface{}) (interface{}, interface{}, e
 
 func (s *Server) denomPrice(denoms map[string]interface{}, denom string) (map[string]interface{}, error) {
 
-	if Priceinto, OK := s.Priceinto[denom]; OK {
+	if Priceinto, OK := s.Priceinto[denom]; OK && denom != "hsc" && denom != "uhsc" {
 		denoms["price"] = Priceinto.Pirce
 		denoms["priceunit"] = Priceinto.Priceunit
 
